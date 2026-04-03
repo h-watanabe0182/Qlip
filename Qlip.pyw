@@ -172,6 +172,11 @@ class App:
         self.show_card_image = tk.BooleanVar(
             value=self.metadata.get("__settings__", {}).get("show_card_image", True)
         )
+        self._web_panel_open = False
+        self._web_urls = self.metadata.get("__settings__", {}).get(
+            "web_urls", ["http://localhost/"]
+        )
+        self._web_current_idx = 0
 
         self.cfg_path = find_config()
         if self.cfg_path:
@@ -235,6 +240,17 @@ class App:
 
         tk.Label(header, text="Enter: 起動  |  複数: フィルタ", bg=C_HEADER_BG, fg=C_TEXT_SUB,
                  font=(FONT, 9)).pack(side=tk.RIGHT, padx=(8, 16))
+
+        # Web パネル トグルボタン
+        self._web_toggle_btn = tk.Label(
+            header, text="🌐 Web ▶", bg="#e0eaff", fg=C_SIDEBAR_ACTIVE_FG,
+            font=(FONT, 9, "bold"), padx=10, pady=4, cursor="hand2",
+            relief=tk.FLAT, bd=0)
+        self._web_toggle_btn.pack(side=tk.RIGHT, padx=(0, 8), pady=16)
+        self._web_toggle_btn.bind("<Button-1>", lambda e: self._toggle_web_panel())
+        self._web_toggle_btn.bind("<Enter>", lambda e: self._web_toggle_btn.configure(bg="#c7d9ff"))
+        self._web_toggle_btn.bind("<Leave>", lambda e: self._web_toggle_btn.configure(
+            bg="#e0eaff" if not self._web_panel_open else "#c7d9ff"))
 
         # === Body ===
         body = tk.Frame(self.root, bg=C_BG)
@@ -348,6 +364,55 @@ class App:
             self.grid_frame.columnconfigure(c, weight=1, uniform="col")
         for r in range(ROWS):
             self.grid_frame.rowconfigure(r, weight=1, uniform="row")
+
+        # === Web Panel (右サイドバー、初期非表示) ===
+        self.web_panel = tk.Frame(body, bg=C_SIDEBAR_BG, width=420,
+                                  highlightbackground=C_SIDEBAR_BORDER, highlightthickness=1)
+        self.web_panel.pack_propagate(False)
+        # pack しない（toggle で制御）
+
+        # Webパネル ヘッダー行
+        wp_header = tk.Frame(self.web_panel, bg=C_HEADER_BG,
+                             highlightbackground=C_HEADER_BORDER, highlightthickness=1)
+        wp_header.pack(fill=tk.X)
+
+        tk.Label(wp_header, text="🌐", bg=C_HEADER_BG, font=(FONT, 11)).pack(side=tk.LEFT, padx=(8,2), pady=6)
+        self._web_url_var = tk.StringVar(value=self._web_urls[self._web_current_idx])
+        url_entry = tk.Entry(wp_header, textvariable=self._web_url_var,
+                             font=(FONT, 9), relief=tk.SOLID, bd=1)
+        url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=4, pady=6)
+        url_entry.bind("<Return>", lambda e: self._web_load(self._web_url_var.get()))
+
+        tk.Button(wp_header, text="→", font=(FONT, 9, "bold"),
+                  bg=C_BTN_BG, fg=C_BTN_FG, relief=tk.FLAT, padx=6,
+                  command=lambda: self._web_load(self._web_url_var.get())
+                  ).pack(side=tk.LEFT, padx=(0,2), pady=6)
+        tk.Button(wp_header, text="↺", font=(FONT, 9, "bold"),
+                  bg="#f0f0f0", relief=tk.FLAT, padx=6,
+                  command=lambda: self._web_load(self._web_url_var.get())
+                  ).pack(side=tk.LEFT, padx=(0,4), pady=6)
+        tk.Button(wp_header, text="✕", font=(FONT, 9),
+                  bg="#f0f0f0", relief=tk.FLAT, padx=6,
+                  command=self._toggle_web_panel
+                  ).pack(side=tk.RIGHT, padx=(0,4), pady=6)
+
+        # URLタブ行
+        self._wp_tab_frame = tk.Frame(self.web_panel, bg=C_SIDEBAR_BG)
+        self._wp_tab_frame.pack(fill=tk.X)
+        self._rebuild_web_tabs()
+
+        # Webビュー
+        try:
+            from tkinterweb import HtmlFrame
+            self.web_view = HtmlFrame(self.web_panel, messages_enabled=False)
+            self.web_view.pack(fill=tk.BOTH, expand=True)
+            self._web_available = True
+        except Exception:
+            self.web_view = tk.Label(self.web_panel,
+                                     text="tkinterweb が利用できません",
+                                     bg=C_SIDEBAR_BG, fg=C_TEXT_SUB)
+            self.web_view.pack(fill=tk.BOTH, expand=True)
+            self._web_available = False
 
     def _add_cat_btn(self, parent, cat_id, label):
         btn = tk.Label(parent, text=label, bg=C_SIDEBAR_BG, fg=C_SIDEBAR_FG,
@@ -756,6 +821,88 @@ class App:
                   padx=24, pady=4, command=dlg.destroy).pack(side=tk.LEFT, padx=8)
 
         dlg.columnconfigure(1, weight=1)
+
+    # === Web Panel ===
+    def _toggle_web_panel(self):
+        self._web_panel_open = not self._web_panel_open
+        if self._web_panel_open:
+            self.web_panel.pack(fill=tk.Y, side=tk.RIGHT, before=self.grid_frame)
+            self._web_toggle_btn.configure(text="🌐 Web ◀", bg="#c7d9ff")
+            self._web_load(self._web_url_var.get())
+        else:
+            self.web_panel.pack_forget()
+            self._web_toggle_btn.configure(text="🌐 Web ▶", bg="#e0eaff")
+
+    def _web_load(self, url):
+        if not url.strip():
+            return
+        url = url.strip()
+        if not url.startswith(("http://", "https://")):
+            url = "http://" + url
+        self._web_url_var.set(url)
+        if self._web_available:
+            try:
+                self.web_view.load_url(url)
+            except Exception as ex:
+                log(f"WebPanel load error: {ex}")
+        # 現在のタブURLを更新して保存
+        self._web_urls[self._web_current_idx] = url
+        self._save_web_settings()
+
+    def _rebuild_web_tabs(self):
+        for w in self._wp_tab_frame.winfo_children():
+            w.destroy()
+        for i, u in enumerate(self._web_urls):
+            label = u.replace("https://", "").replace("http://", "").split("/")[0] or f"Tab{i+1}"
+            is_active = (i == self._web_current_idx)
+            btn = tk.Label(self._wp_tab_frame, text=label,
+                           bg=C_SIDEBAR_ACTIVE_BG if is_active else C_SIDEBAR_BG,
+                           fg=C_SIDEBAR_ACTIVE_FG if is_active else C_SIDEBAR_FG,
+                           font=(FONT, 8, "bold" if is_active else "normal"),
+                           padx=8, pady=4, cursor="hand2",
+                           relief=tk.FLAT)
+            btn.pack(side=tk.LEFT)
+            btn.bind("<Button-1>", lambda e, idx=i: self._switch_web_tab(idx))
+        # ＋ボタン
+        add = tk.Label(self._wp_tab_frame, text="＋", bg=C_SIDEBAR_BG, fg=C_ADD_FG,
+                       font=(FONT, 9, "bold"), padx=6, pady=4, cursor="hand2")
+        add.pack(side=tk.LEFT)
+        add.bind("<Button-1>", lambda e: self._add_web_tab())
+        # 削除ボタン（タブ2枚以上の時）
+        if len(self._web_urls) > 1:
+            rm = tk.Label(self._wp_tab_frame, text="✕", bg=C_SIDEBAR_BG, fg="#dc2626",
+                          font=(FONT, 9), padx=6, pady=4, cursor="hand2")
+            rm.pack(side=tk.RIGHT)
+            rm.bind("<Button-1>", lambda e: self._remove_web_tab())
+
+    def _switch_web_tab(self, idx):
+        self._web_current_idx = idx
+        self._web_url_var.set(self._web_urls[idx])
+        self._rebuild_web_tabs()
+        self._web_load(self._web_urls[idx])
+
+    def _add_web_tab(self):
+        self._web_urls.append("http://localhost/")
+        self._web_current_idx = len(self._web_urls) - 1
+        self._web_url_var.set(self._web_urls[self._web_current_idx])
+        self._rebuild_web_tabs()
+        self._save_web_settings()
+
+    def _remove_web_tab(self):
+        if len(self._web_urls) <= 1:
+            return
+        del self._web_urls[self._web_current_idx]
+        self._web_current_idx = max(0, self._web_current_idx - 1)
+        self._web_url_var.set(self._web_urls[self._web_current_idx])
+        self._rebuild_web_tabs()
+        self._web_load(self._web_urls[self._web_current_idx])
+        self._save_web_settings()
+
+    def _save_web_settings(self):
+        settings = self.metadata.get("__settings__", {})
+        settings["web_urls"] = self._web_urls
+        self.metadata["__settings__"] = settings
+        save_metadata(self.metadata)
 
     def _browse_path(self, path_var):
         choice = messagebox.askyesnocancel("参照",
