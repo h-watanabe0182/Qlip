@@ -241,12 +241,12 @@ class App:
         tk.Label(header, text="Enter: 起動  |  複数: フィルタ", bg=C_HEADER_BG, fg=C_TEXT_SUB,
                  font=(FONT, 9)).pack(side=tk.RIGHT, padx=(8, 16))
 
-        # Web パネル トグルボタン
+        # Web パネル トグルボタン（現在非表示 / 将来活用予定）
         self._web_toggle_btn = tk.Label(
             header, text="🌐 Web ▶", bg="#e0eaff", fg=C_SIDEBAR_ACTIVE_FG,
             font=(FONT, 9, "bold"), padx=10, pady=4, cursor="hand2",
             relief=tk.FLAT, bd=0)
-        self._web_toggle_btn.pack(side=tk.RIGHT, padx=(0, 8), pady=16)
+        # self._web_toggle_btn.pack(side=tk.RIGHT, padx=(0, 8), pady=16)
         self._web_toggle_btn.bind("<Button-1>", lambda e: self._toggle_web_panel())
         self._web_toggle_btn.bind("<Enter>", lambda e: self._web_toggle_btn.configure(bg="#c7d9ff"))
         self._web_toggle_btn.bind("<Leave>", lambda e: self._web_toggle_btn.configure(
