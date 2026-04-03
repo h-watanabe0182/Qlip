@@ -1,0 +1,6 @@
+build/
+__pycache__/
+*.spec
+Qlip.log
+DigitalWorkSpace.log
+Qlip.exe - ショートカット.lnk

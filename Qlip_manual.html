@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qlip 使い方マニュアル</title>
+<style>
+  /* === Base === */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Meiryo", "Yu Gothic", sans-serif;
+    background: linear-gradient(135deg, #dff0fb 0%, #eaf4ff 40%, #f0f7ff 70%, #e8f5f0 100%);
+    min-height: 100vh;
+    color: #1f2937;
+  }
+
+  /* === Hero === */
+  .hero {
+    background: linear-gradient(120deg, #0ea5e9 0%, #38bdf8 40%, #7dd3fc 70%, #a7f3d0 100%);
+    padding: 56px 32px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 20% 50%, rgba(255,255,255,0.18) 0%, transparent 60%),
+      radial-gradient(circle at 80% 30%, rgba(255,255,255,0.12) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  /* circuit dots */
+  .hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,0.35) 1.5px, transparent 1.5px);
+    background-size: 36px 36px;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .hero-inner { position: relative; z-index: 1; }
+
+  .hero-logo {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .logo-clip {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #ffffff 0%, #e0f2fe 100%);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(14,165,233,0.4), 0 0 0 3px rgba(255,255,255,0.5);
+    font-size: 28px;
+  }
+  .logo-text {
+    font-size: 48px; font-weight: 900; letter-spacing: -1px;
+    color: #ffffff;
+    text-shadow: 0 2px 12px rgba(14,165,233,0.5);
+  }
+  .logo-text span { color: #fbbf24; }
+
+  .hero-sub {
+    font-size: 15px; color: rgba(255,255,255,0.9);
+    letter-spacing: 2px; margin-bottom: 24px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+
+  /* mini card badges in hero */
+  .hero-badges {
+    display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .badge {
+    padding: 6px 16px; border-radius: 20px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    color: #fff;
+  }
+  .badge-blue   { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+  .badge-green  { background: linear-gradient(135deg, #22c55e, #4ade80); }
+  .badge-orange { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+  .badge-purple { background: linear-gradient(135deg, #a855f7, #c084fc); }
+  .badge-teal   { background: linear-gradient(135deg, #14b8a6, #2dd4bf); }
+
+  /* === Container === */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* === Section title === */
+  .section-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 20px; font-weight: 800;
+    color: #0369a1;
+    margin-bottom: 20px; margin-top: 48px;
+    padding-bottom: 8px;
+    border-bottom: 3px solid;
+    border-image: linear-gradient(90deg, #38bdf8, #a7f3d0) 1;
+  }
+  .section-title:first-child { margin-top: 0; }
+  .sec-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  /* === Card grid === */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px 18px;
+    box-shadow: 0 2px 12px rgba(14,165,233,0.10), 0 1px 3px rgba(0,0,0,0.06);
+    border: 2px solid transparent;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    border-radius: 16px 16px 0 0;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(14,165,233,0.18), 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .card-blue   { border-color: #bfdbfe; } .card-blue::before   { background: linear-gradient(90deg,#3b82f6,#60a5fa); }
+  .card-green  { border-color: #bbf7d0; } .card-green::before  { background: linear-gradient(90deg,#22c55e,#4ade80); }
+  .card-orange { border-color: #fde68a; } .card-orange::before { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+  .card-purple { border-color: #e9d5ff; } .card-purple::before { background: linear-gradient(90deg,#a855f7,#c084fc); }
+  .card-teal   { border-color: #99f6e4; } .card-teal::before   { background: linear-gradient(90deg,#14b8a6,#2dd4bf); }
+
+  .card-icon {
+    font-size: 28px; margin-bottom: 8px; display: block;
+  }
+  .card h3 {
+    font-size: 14px; font-weight: 800; color: #1e3a5f;
+    margin-bottom: 6px;
+  }
+  .card p {
+    font-size: 12.5px; color: #4b5563; line-height: 1.7;
+  }
+
+  /* === Step list === */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 18px 0;
+    border-bottom: 1px dashed #bae6fd;
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 900; color: #fff;
+    background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+    box-shadow: 0 2px 8px rgba(14,165,233,0.4);
+  }
+  .step-body h4 { font-size: 14px; font-weight: 800; color: #0369a1; margin-bottom: 4px; }
+  .step-body p  { font-size: 13px; color: #374151; line-height: 1.7; }
+
+  /* === Table === */
+  .info-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(14,165,233,0.10);
+  }
+  .info-table thead tr {
+    background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+    color: #fff;
+  }
+  .info-table th { padding: 12px 16px; text-align: left; font-weight: 700; }
+  .info-table td { padding: 11px 16px; border-bottom: 1px solid #e0f2fe; }
+  .info-table tbody tr:nth-child(even) { background: #f0f9ff; }
+  .info-table tbody tr:hover { background: #e0f2fe; transition: background 0.15s; }
+
+  /* colored dot */
+  .dot {
+    display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+    margin-right: 6px; vertical-align: middle;
+  }
+
+  /* === Tip box === */
+  .tip {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-left: 5px solid #38bdf8;
+    border-radius: 0 12px 12px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13px; color: #0c4a6e; line-height: 1.8;
+  }
+  .tip strong { color: #0369a1; }
+
+  .warn {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border-left: 5px solid #f59e0b;
+    border-radius: 0 12px 12px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13px; color: #78350f; line-height: 1.8;
+  }
+
+  /* === Screenshot frame === */
+  .screen-frame {
+    background: #1e293b;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 8px 32px rgba(14,165,233,0.20);
+    margin: 16px 0;
+  }
+  .screen-bar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 4px 8px;
+  }
+  .screen-bar span {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .s-red   { background: #ef4444; }
+  .s-yellow{ background: #f59e0b; }
+  .s-green { background: #22c55e; }
+  .screen-title {
+    flex: 1; text-align: center; font-size: 11px; color: #94a3b8;
+    font-weight: 600;
+  }
+  .screen-body {
+    background: #f2f3f5;
+    border-radius: 8px;
+    padding: 16px;
+    min-height: 80px;
+    font-size: 12px;
+  }
+
+  /* Mock UI */
+  .mock-header {
+    background: #fff; border-radius: 6px; padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid #d0d5dd; margin-bottom: 10px;
+  }
+  .mock-logo { font-size: 16px; font-weight: 900; color: #1a56db; }
+  .mock-search {
+    flex: 1; height: 32px; background: #fff;
+    border: 1.5px solid #d0d5dd; border-radius: 6px;
+    display: flex; align-items: center; padding: 0 10px;
+    font-size: 11px; color: #9ca3af;
+  }
+  .mock-hint { font-size: 10px; color: #9ca3af; white-space: nowrap; }
+
+  .mock-body { display: flex; gap: 8px; }
+  .mock-sidebar {
+    width: 90px; background: #f7f8fa;
+    border: 1px solid #e0e3e8; border-radius: 6px;
+    padding: 8px 0; flex-shrink: 0;
+  }
+  .mock-cat {
+    padding: 5px 10px; font-size: 10px; color: #444; cursor: pointer;
+  }
+  .mock-cat.active {
+    background: #e0eaff; color: #1a56db; font-weight: 700;
+    border-radius: 4px; margin: 0 4px;
+  }
+  .mock-grid {
+    flex: 1; display: grid; grid-template-columns: repeat(4,1fr); gap: 5px;
+  }
+  .mock-card {
+    border-radius: 6px; padding: 7px 5px; text-align: center;
+    font-size: 9px; font-weight: 700; border: 2px solid;
+    cursor: pointer;
+  }
+  .mc-blue   { border-color: #5babf0; color: #3b82f6; background: #fff; }
+  .mc-green  { border-color: #6ac97a; color: #22c55e; background: #fff; }
+  .mc-yellow { border-color: #e8c05a; color: #d97706; background: #fff; }
+  .mc-pink   { border-color: #e898b8; color: #db2777; background: #fff; }
+  .mc-purple { border-color: #c090dc; color: #9333ea; background: #fff; }
+  .mc-teal   { border-color: #5abdb8; color: #0d9488; background: #fff; }
+  .mock-preview {
+    width: 100px; background: #fff;
+    border: 1px solid #d0d5dd; border-radius: 6px;
+    padding: 8px 6px; font-size: 9px; color: #6b7280;
+    text-align: center; flex-shrink: 0;
+  }
+  .mock-preview-title { font-weight: 700; color: #1f2937; margin-bottom: 6px; font-size: 10px; }
+  .mock-img-box {
+    width: 100%; height: 40px; background: #f0f4ff;
+    border-radius: 4px; margin-bottom: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  /* === Footer === */
+  .footer {
+    text-align: center; padding: 24px;
+    font-size: 12px; color: #94a3b8;
+    border-top: 1px solid #bae6fd;
+  }
+
+  /* === kbd === */
+  kbd {
+    display: inline-block;
+    background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-family: monospace;
+    box-shadow: 0 2px 0 #b0bec5;
+    color: #1e293b;
+  }
+
+  code {
+    background: #e0f2fe; color: #0c4a6e;
+    padding: 1px 6px; border-radius: 4px;
+    font-family: monospace; font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== HERO ========== -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-logo">
+      <div class="logo-clip">📎</div>
+      <div class="logo-text">Q<span>L</span>IP</div>
+    </div>
+    <p class="hero-sub">Your Quick Link Organizer</p>
+    <div class="hero-badges">
+      <span class="badge badge-blue">🌐 Web</span>
+      <span class="badge badge-green">📁 フォルダ</span>
+      <span class="badge badge-orange">⚡ ツール</span>
+      <span class="badge badge-purple">🖼 ドキュメント</span>
+      <span class="badge badge-teal">🔗 ショートカット</span>
+    </div>
+    <p style="margin-top:18px; font-size:13px; color:rgba(255,255,255,0.8);">
+      よく使うリンク・ファイル・ツールを一画面に集約して素早く起動できるランチャー
+    </p>
+  </div>
+</div>
+
+<!-- ========== MAIN ========== -->
+<div class="container">
+
+  <!-- 1. 概要 -->
+  <div class="section-title">
+    <div class="sec-icon" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);">📋</div>
+    Qlip とは
+  </div>
+
+  <div class="card-grid">
+    <div class="card card-blue">
+      <span class="card-icon">🚀</span>
+      <h3>素早い起動</h3>
+      <p>カードをクリック、またはキーワードを入力して Enter するだけで、ファイル・フォルダ・Web サイト・ツールを即座に開けます。</p>
+    </div>
+    <div class="card card-green">
+      <span class="card-icon">🗂</span>
+      <h3>カテゴリ整理</h3>
+      <p>お気に入り・PJフォルダ・ツール・書類など、カテゴリごとにカードを整理。サイドバーでワンクリック切り替え。</p>
+    </div>
+    <div class="card card-orange">
+      <span class="card-icon">🔍</span>
+      <h3>インクリメンタル検索</h3>
+      <p>名前・パス・説明文でリアルタイム絞り込み。1件一致で即起動、複数一致でグリッド絞り込み表示。</p>
+    </div>
+    <div class="card card-purple">
+      <span class="card-icon">🖼</span>
+      <h3>プレビュー表示</h3>
+      <p>カードにマウスを乗せると、左パネルにアイコン画像・説明文・パスをリアルタイムプレビュー。</p>
+    </div>
+  </div>
+
+  <div class="tip">
+    <strong>対応する起動タイプ：</strong>
+    ファイル（.exe / .xlsm / .txt など）　／　フォルダ（ローカル・ネットワーク共有）　／　Web URL（http / https）　／　PowerShell スクリプト（.ps1）　／　バッチファイル（.bat / .cmd）
+  </div>
+
+  <!-- 2. 画面構成 -->
+  <div class="section-title">
+    <div class="sec-icon" style="background:linear-gradient(135deg,#22c55e,#4ade80);">🖥</div>
+    画面構成
+  </div>
+
+  <div class="screen-frame">
+    <div class="screen-bar">
+      <span class="s-red"></span><span class="s-yellow"></span><span class="s-green"></span>
+      <span class="screen-title">Qlip — Your Quick Link Organizer</span>
+    </div>
+    <div class="screen-body">
+      <div class="mock-header">
+        <span class="mock-logo">Qlip</span>
+        <span style="font-size:9px; color:#9ca3af; margin-right:6px;">Your Quick Link Organizer</span>
+        <div class="mock-search">検索ワードを入力... </div>
+        <span class="mock-hint">Enter: 起動 ｜ 複数: フィルタ</span>
+      </div>
+      <div class="mock-body">
+        <div class="mock-sidebar">
+          <div class="mock-cat active">All</div>
+          <div class="mock-cat">お気に入り</div>
+          <div class="mock-cat">PJフォルダ</div>
+          <div class="mock-cat">ツール</div>
+          <div class="mock-cat">書類</div>
+          <div class="mock-cat">営業・見積</div>
+          <div class="mock-cat">その他</div>
+          <div class="mock-cat" style="color:#16a34a;font-weight:700;margin-top:8px;">＋ 追加</div>
+          <div class="mock-cat" style="color:#d97706;font-weight:700;">✎ 編集</div>
+        </div>
+        <div class="mock-grid">
+          <div class="mock-card mc-blue">mermaid</div>
+          <div class="mock-card mc-blue">memo</div>
+          <div class="mock-card mc-yellow">hyouka</div>
+          <div class="mock-card mc-blue">rdp</div>
+          <div class="mock-card mc-green">kl</div>
+          <div class="mock-card mc-green">sro</div>
+          <div class="mock-card mc-teal">todo</div>
+          <div class="mock-card mc-teal">tool</div>
+          <div class="mock-card mc-pink">refquo</div>
+          <div class="mock-card mc-purple">quolist</div>
+          <div class="mock-card mc-teal">robo</div>
+          <div class="mock-card mc-blue">capMD</div>
+        </div>
+        <div class="mock-preview">
+          <div class="mock-preview-title">mermaid</div>
+          <div class="mock-img-box">🗺</div>
+          <div style="font-size:8px; text-align:left; color:#6b7280;">
+            C:\claudecode\<br>...\index.html<br><br>
+            <span style="color:#374151;">Mermaid記法エディタ</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table class="info-table" style="margin-top:16px;">
+    <thead><tr><th>エリア</th><th>説明</th></tr></thead>
+    <tbody>
+      <tr><td>🔎 <strong>ヘッダー検索バー</strong></td><td>キーワード入力 → <kbd>Enter</kbd> で検索・起動。常時フォーカス可能。</td></tr>
+      <tr><td>📂 <strong>サイドバー</strong></td><td>カテゴリ一覧。クリックでグリッドを絞り込み。「＋ 追加」「✎ 編集」ボタンも配置。</td></tr>
+      <tr><td>🟦 <strong>カードグリッド</strong></td><td>ショートカットカード（最大 8列 × 5行 = 40件）を表示。クリックで起動。</td></tr>
+      <tr><td>👁 <strong>プレビューパネル</strong></td><td>カードホバー時に画像・説明・パスを表示。</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 3. 起動方法 -->
+  <div class="section-title">
+    <div class="sec-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">▶</div>
+    ショートカットの起動方法
+  </div>
+
+  <div class="card-grid">
+    <div class="card card-blue">
+      <span class="card-icon">🖱</span>
+      <h3>カードをクリック</h3>
+      <p>グリッド上のカードを左クリックするだけで即座に起動します。</p>
+    </div>
+    <div class="card card-orange">
+      <span class="card-icon">⌨</span>
+      <h3>名前で検索 → Enter</h3>
+      <p>検索バーに名前を入力して <kbd>Enter</kbd>。1件一致なら即起動、複数一致なら絞り込み表示します。</p>
+    </div>
+    <div class="card card-green">
+      <span class="card-icon">🔗</span>
+      <h3>パス・説明でも検索可</h3>
+      <p>パスの一部や説明文のキーワードでも検索できます。</p>
+    </div>
+  </div>
+
+  <table class="info-table">
+    <thead><tr><th>タイプ</th><th>起動方法</th><th>特記事項</th></tr></thead>
+    <tbody>
+      <tr><td>🌐 <strong>URL</strong></td><td>既定ブラウザで開く</td><td><code>http://</code> または <code>https://</code> で始まるもの</td></tr>
+      <tr><td>📄 <strong>ファイル</strong></td><td>関連付けアプリで開く</td><td>.exe / .xlsx / .txt など</td></tr>
+      <tr><td>📁 <strong>フォルダ</strong></td><td>エクスプローラーで開く</td><td>ネットワークパス（\\server\share）も可</td></tr>
+      <tr><td>⚡ <strong>.ps1</strong></td><td>新しいコンソール窓で PowerShell 実行</td><td>ExecutionPolicy Bypass・NoExit で実行</td></tr>
+      <tr><td>📜 <strong>.bat / .cmd</strong></td><td>新しいコンソール窓で cmd 実行</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 4. アクセスリスト -->
+  <div class="section-title">
+    <div class="sec-icon" style="background:linear-gradient(135deg,#a855f7,#c084fc);">📝</div>
+    アクセスリスト（設定ファイル）
+  </div>
+
+  <p style="font-size:13px; color:#374151; line-height:1.8; margin-bottom:12px;">
+    Qlip は <strong>exe と同じフォルダに置かれた <code>.txt</code> ファイル</strong>（例：<code>アクセスリスト.txt</code>）を自動認識して読み込みます。
+    テキストエディタで直接編集することも、アプリ内の「＋ 追加」「✎ 編集」から操作することも可能です。
+  </p>
+
+  <div class="screen-frame">
+    <div class="screen-bar">
+      <span class="s-red"></span><span class="s-yellow"></span><span class="s-green"></span>
+      <span class="screen-title">アクセスリスト.txt — 書式サンプル</span>
+    </div>
+    <div class="screen-body" style="background:#1e293b; color:#e2e8f0; font-family:monospace; font-size:12px; line-height:1.9;">
+      <span style="color:#94a3b8;"># CATEGORY 0 お気に入り</span><br>
+      <span style="color:#94a3b8;"># CATEGORY 1 PJフォルダ</span><br>
+      <span style="color:#94a3b8;"># CATEGORY 2 ツール</span><br>
+      <br>
+      <span style="color:#fbbf24;">0</span> <span style="color:#86efac;">mermaid</span> <span style="color:#7dd3fc;">C:\claudecode\Mermaid\index.html</span><br>
+      <span style="color:#fbbf24;">0</span> <span style="color:#86efac;">todo</span> <span style="color:#7dd3fc;">http://172.17.2.205:5001/</span><br>
+      <span style="color:#fbbf24;">1</span> <span style="color:#86efac;">kl</span> <span style="color:#7dd3fc;">\\server\projects\TEC\kl\01_DOC</span><br>
+      <span style="color:#fbbf24;">2</span> <span style="color:#86efac;">tool</span> <span style="color:#7dd3fc;">C:\Tools</span><br>
+    </div>
+  </div>
+
+  <table class="info-table" style="margin-top:12px;">
+    <thead><tr><th>書式</th><th>説明</th><th>例</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code># CATEGORY &lt;番号&gt; &lt;名前&gt;</code></td>
+        <td>カテゴリ定義行</td>
+        <td><code># CATEGORY 0 お気に入り</code></td>
+      </tr>
+      <tr>
+        <td><code>&lt;番号&gt; &lt;名前&gt; &lt;パス&gt;</code></td>
+        <td>ショートカット行（半角スペース区切り）</td>
+        <td><code>0 memo C:\Desktop\memo.txt</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <strong>⚠ 注意：</strong>
+    名前に半角スペースは使用できません。アンダースコアやキャメルケースを推奨します。<br>
+    ファイルは Shift-JIS（cp932）または UTF-8 の両方に対応しています。保存時は cp932 で書き込まれます。
+  </div>
+
+  <!-- 5. 追加・編集 -->
+  <div class="section-title">
+    <div class="sec-icon" style="background:linear-gradient(135deg,#14b8a6,#2dd4bf);">✏</div>
+    ショートカットの追加・編集・削除
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>「＋ 追加」または「✎ 編集」をクリック</h4>
+        <p>サイドバー下部のボタンをクリックすると、ダイアログが開きます。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>各項目を入力</h4>
+        <p>
+          <strong>カテゴリ</strong>・<strong>名前</strong>・<strong>パス</strong> は必須です。<br>
+          「参照」ボタンでファイル／フォルダをダイアログから選択できます。
+        </p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>説明・画像・枠色を任意設定</h4>
+        <p>
+          <strong>説明</strong>：プレビューパネルに表示するテキストメモ。<br>
+          <strong>画像</strong>：プレビューに表示するサムネイル（PNG/GIF）。<br>
+          <strong>枠色</strong>：カードの枠色を HEX カラーで指定（空欄でカテゴリ色を使用）。
+        </p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>「追加」または「更新」をクリックして保存</h4>
+        <p>アクセスリスト.txt と metadata.json が自動保存されます。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">—</div>
+      <div class="step-body">
+        <h4>削除する場合</h4>
+        <p>編集ダイアログで対象を選択し、「削除」ボタンをクリックして確認します。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. カテゴリカラー -->
+  <div class="section-title">
+    <div class="sec-icon" style="background:linear-gradient(135deg,#3b82f6,#60a5fa);">🎨</div>
+    カテゴリカラー一覧
+  </div>
+
+  <table class="info-table">
+    <thead><tr><th>カテゴリ番号</th><th>デフォルト色</th><th>イメージ</th></tr></thead>
+    <tbody>
+      <tr><td>0（お気に入り）</td><td><span class="dot" style="background:#90caf9;"></span>#90caf9</td><td>スカイブルー</td></tr>
+      <tr><td>1（PJフォルダ）</td><td><span class="dot" style="background:#a5d6a7;"></span>#a5d6a7</td><td>グリーン</td></tr>
+      <tr><td>2（ツール）</td><td><span class="dot" style="background:#ffe082;"></span>#ffe082</td><td>イエロー</td></tr>
+      <tr><td>3（書類）</td><td><span class="dot" style="background:#f48fb1;"></span>#f48fb1</td><td>ピンク</td></tr>
+      <tr><td>4（営業・見積）</td><td><span class="dot" style="background:#ce93d8;"></span>#ce93d8</td><td>ラベンダー</td></tr>
+      <tr><td>5（その他）</td><td><span class="dot" style="background:#80cbc4;"></span>#80cbc4</td><td>ティール</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <strong>カード枠色のカスタマイズ：</strong>
+    編集ダイアログの「枠色」欄に HEX カラー（例：<code>#fde68a</code>）を入力するか、プリセットカラーボタンをクリックすることで、カードごとに個別の色を設定できます。空欄にするとカテゴリのデフォルト色に戻ります。
+  </div>
+
+  <!-- 7. ファイル構成 -->
+  <div class="section-title">
+    <div class="sec-icon" style="background:linear-gradient(135deg,#f43f5e,#fb7185);">📦</div>
+    ファイル構成
+  </div>
+
+  <table class="info-table">
+    <thead><tr><th>ファイル名</th><th>役割</th><th>編集</th></tr></thead>
+    <tbody>
+      <tr><td><code>Qlip.exe</code></td><td>アプリ本体</td><td>—</td></tr>
+      <tr><td><code>アクセスリスト.txt</code>（任意名の .txt）</td><td>カテゴリ・ショートカット定義</td><td>テキストエディタ or アプリ内</td></tr>
+      <tr><td><code>metadata.json</code></td><td>説明・画像パス・枠色の保存先</td><td>自動生成・アプリ内</td></tr>
+      <tr><td><code>Qlip.log</code></td><td>起動ログ（自動生成）</td><td>参照のみ</td></tr>
+      <tr><td><code>Qlip.ico</code></td><td>アプリアイコン</td><td>—</td></tr>
+      <tr><td><code>images\</code></td><td>プレビュー用画像の格納先（任意）</td><td>手動配置</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn">
+    <strong>⚠ 重要：</strong>
+    <code>Qlip.exe</code>・<code>アクセスリスト.txt</code>・<code>metadata.json</code> は<strong>同じフォルダ</strong>に置いてください。
+    exe を別の場所に移動すると設定が読み込まれなくなります。
+  </div>
+
+  <!-- 8. よくある操作 -->
+  <div class="section-title">
+    <div class="sec-icon" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);">💡</div>
+    よくある操作・Tips
+  </div>
+
+  <div class="card-grid">
+    <div class="card card-teal">
+      <span class="card-icon">⚡</span>
+      <h3>即時起動（検索）</h3>
+      <p>アプリ起動直後にすでに検索バーにフォーカスがあります。そのままショートカット名を入力して <kbd>Enter</kbd> を押すだけ。</p>
+    </div>
+    <div class="card card-blue">
+      <span class="card-icon">🗂</span>
+      <h3>カテゴリ切り替え</h3>
+      <p>サイドバーのカテゴリ名をクリックすると、そのカテゴリのカードのみ表示されます。「All」で全件表示に戻ります。</p>
+    </div>
+    <div class="card card-green">
+      <span class="card-icon">📋</span>
+      <h3>テキスト直接編集</h3>
+      <p>アクセスリスト.txt をテキストエディタで編集してアプリを再起動すると、変更が反映されます。</p>
+    </div>
+    <div class="card card-orange">
+      <span class="card-icon">🖼</span>
+      <h3>プレビュー画像の設定</h3>
+      <p>編集ダイアログの「画像」欄に PNG ファイルのパスを指定します。<code>images\</code> フォルダに置くと管理しやすいです。</p>
+    </div>
+    <div class="card card-purple">
+      <span class="card-icon">🔄</span>
+      <h3>リストの更新を反映</h3>
+      <p>アクセスリスト.txt を外部で編集した場合は、Qlip を再起動すると最新の内容が読み込まれます。</p>
+    </div>
+    <div class="card card-teal">
+      <span class="card-icon">📊</span>
+      <h3>ログの確認</h3>
+      <p><code>Qlip.log</code> に起動・検索・追加・削除の操作ログが記録されます。トラブル時に参照してください。</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== FOOTER ========== -->
+<div class="footer">
+  Qlip — Your Quick Link Organizer &nbsp;|&nbsp; 使い方マニュアル
+</div>
+
+</body>
+</html>

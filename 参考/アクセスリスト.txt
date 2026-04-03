@@ -1,0 +1,82 @@
+# CATEGORY 0 お気に入り
+# CATEGORY 1 PJフォルダ
+# CATEGORY 2 ツール
+# CATEGORY 3 製品
+# CATEGORY 4 営業・見積・価格
+# CATEGORY 5 その他
+
+0 mermaid C:\claudecode\20260227_Mermaid記法エディタ2\index.html
+0 memo C:\Users\h-watanabe.SGDOMAIN\Desktop\業務\memo.txt
+0 hyouka C:\Tools\評価システム2024\rs2001.exe
+0 bunseki C:\Bunseki2\評価システム\_毎月のCHECK
+0 rdp C:\Tools\RDP接続ツール\Connect-RDP.ps1
+0 macro C:\Tools\Excelマクロ\便利マクロを含んだEXCEL_v3.xlsm
+0 search C:\Tools\フォルダ内ドキュメント全文検索\ドキュメント全文検索.exe
+0 filelist C:\Tools\フォルダ内ファイル・フォルダ一覧抽出くん\FolderList.ps1
+0 capMD C:\claudecode\20260119_MDi画面起動+SS\dist\MDi_Screenshot_Tool.exe
+0 進捗 C:\claudecode\20251209_進捗報告をグラフ化\start_app.bat
+0 Pac C:\claudecode\20260120_クリップボード確認\dist\PaClibo.exe
+1 kl \\sgsv-ankaa\projects\TEC\202608_KL\01_DOC
+1 klS2 \\sgsv-ankaa\ProjectsArchive\RO\TCOSDOC\Ver4.0.7(ｷﾃﾞｲﾗﾝﾄﾞ)
+1 klS22 \\sgsv-ankaa\Projects\TEC\201204_KL
+1 klS4 \\sgsv-ankaa\Projects\TEC\201811_KL(K4システム導入)
+1 sro \\sgsv-ankaa\projects\TEC\202510_SROC(MDi)\01_DOC
+1 atr \\sgsv-ankaa\Projects\TEC\202703_ATR(MDi)
+1 atrrw \\sgsv-ankaa\Projects\TEC\201104_ATR
+1 hmt \\SGSV-ANKAA\Projects\TEC\201803_HMT
+1 amf \\SGSV-ANKAA\Projects\TEC\202009_AMF(MDi)
+1 cll \\SGSV-ANKAA\Projects\TEC\202306_CLL
+1 fg \\SGSV-ANKAA\Projects\TEC\202305_FG
+1 gsc \\sgsv-ankaa\projects\TEC\201510_GSC
+1 mda \\SGSV-ANKAA\Projects\TEC\202403_MDA
+1 nkl \\mimosa\Share\nts\◆KL（MDi）
+1 nsro \\mimosa\Share\nts\◆SRO（MDi）
+1 cys \\sgsv-ankaa\projects\TEC\201402_CYS
+2 todo http://172.17.2.205:5001/
+2 todo2 C:\Users\h-watanabe.SGDOMAIN\Desktop\TODO\ToDo.txt
+2 tool C:\Tools
+2 tool2 C:\Users\h-watanabe.SGDOMAIN\Desktop\業務\91_Tool
+2 antool \\sgsv-ankaa\Temp\h-watanabe\tool
+2 man C:\Users\h-watanabe.SGDOMAIN\Desktop\業務\91_Tool\manual_recorder\実行.ps1
+2 mancre C:\claudecode\20260105_マニュアルクリエイター\アプリ起動.bat
+2 view C:\Users\h-watanabe.SGDOMAIN\Desktop\業務\91_Tool\SQLServerViewCreator\実行.ps1
+2 hyper C:\Tools\HYPER-VをAI操作\HyperV自動起動ツール.ps1
+2 file C:\Tools\フォルダ内ファイル名検索くん\フォルダ内ファイル名検索くん.ps1
+2 list C:\Tools\OpenFolder\アクセスリスト.txt
+2 rdplist C:\Tools\RDP接続ツール\rdpリスト.txt
+2 api C:\Tools\gemini-APIキー\[sample]GeminiURL.txt
+2 share C:\Tools\SharepointSearch\sharepoint_title_search_human.bat
+2 ファイル削除 C:\Tools\不要ファイル削除提案ツール\ディスク容量分析ツール.exe
+2 校正 C:\Tools\Office文章校正チェック\OfficeAnalyzer.exe
+2 teams C:\claudecode\20251029_Teams通知\start.bat
+2 server C:\Tools\HYPER-V起動ツール\VMManager.ps1
+2 web C:\Tools\WEBサイト起動ツール\Web起動ツール.bat
+2 capRW C:\Tools\AutoCapture\AutoCapture_PPT.ps1
+3 refquo C:\Users\h-watanabe.SGDOMAIN\Desktop\業務\01_プロジェクト\_見積参考資料
+3 setup \\mimosa\Share\UNITEcloud\UNITEcloud\共通管理\開発者向けドキュメント一式\サーバセットアップ手順書
+3 devdoc \\mimosa\Share\UNITEcloud\UNITEcloud\共通管理\開発者向けドキュメント一式
+3 ISV \\sgsv-ankaa\Projects\営業セット\ライセンス管理（お客様）\ISV Royalty ライセンス
+3 注文書 \\sgsv-ankaa\Projects\提携営業管理\注文書・開発着手依頼書\10_東芝テック関連請求エビデンス
+3 rov1 \\SGSV-ankaa\Share\E-5\Products\UNITE.NET\RO\Ver.1.0-
+3 rov3 \\SGSV-ankaa\Share\E-5\Products\UNITE.NET\RO\Ver.3.0-
+3 rov5 \\SGSV-ankaa\Share\E-5\Products\UNITE.NET\RO\Ver.5.0-
+3 r2md \\sgsv-ankaa\Share\E-5\Products\RO\R2MD\01_DOC\10_共通（最新成果物）
+3 価格表 \\Sgsv-ankaa\projects\TEC\00_Solution\10_商品部様\03_価格表\UNITE-Cloud\MDi
+3 紹介資料 \\Sgsv-ankaa\projects\TEC\00_Solution\10_商品部様\50_製品紹介\UNITE-Cloud
+4 quolist C:\Tools\20250904_見積一覧作成\見積一覧作成.ps1
+4 quocre C:\Tools\見積試算ツール\run.bat
+4 quoord C:\Tools\NTS様見積書→発注書転記ツール\見積書→発注書転記ツール.exe
+4 見積 \\sgsv-ankaa\projects\02_見積\TEC
+4 quost \\sgsv-ankaa\projects\02_見積\TEC\キデイランド\2025\カスタマイズ見積・ご注文状況一覧.xlsm
+4 quolistf C:\Tools\20250904_見積一覧作成
+4 ndoc \\Mimosa\share\nts\_00_業務委託／見積書／発注書／納入報告書
+4 npay \\sgsv-ankaa\Share\E-6\62_協力会社様管理\支払関連
+4 nlist C:\Users\h-watanabe.SGDOMAIN\Desktop\業務\07_協力会社様\NTS様_依頼案件一覧.lnk
+5 robo C:\Users\h-watanabe.SGDOMAIN\Desktop\業務\91_Tool\robocopyツール\RobocopyGUIツール.ps1
+5 tic C:\Users\h-watanabe.SGDOMAIN\Desktop\対応中\YAK\20250722_TicTacToe\TicTacToe_vs_Gemini.exe
+5 yak C:\Users\h-watanabe.SGDOMAIN\Desktop\対応中\YAK
+5 spgw \\sgnt-spgw\share
+5 連絡先 C:\Users\h-watanabe.SGDOMAIN\Desktop\業務\memo(連絡先).xls
+5 claude C:\claudecode
+5 製品 C:\Users\h-watanabe.SGDOMAIN\Desktop\業務\03_製品\33_MDi
+5 年間目標 \\sgsv-ankaa\Share\E-6\98_SGMS\01_記録\2025年度\02_事業部\03_ソリューションU（新潟）\02_目標の達成 、プロセスパフォーマンス評価

@@ -1,0 +1,26 @@
+{
+  "Pac": {
+    "description": "",
+    "image": "C:\\claudecode\\20260120_クリップボード確認\\サムネイル画像.png"
+  },
+  "rdp": {
+    "description": "",
+    "image": "C:\\Tools\\RDP接続ツール\\Connect-RDP画像.png",
+    "color": ""
+  },
+  "macro": {
+    "description": "",
+    "image": "C:\\Tools\\Excelマクロ\\サムネイル.png",
+    "color": ""
+  },
+  "mermaid": {
+    "description": "",
+    "image": "C:\\claudecode\\20260227_Mermaid記法エディタ2\\サムネイル画像.png",
+    "color": ""
+  },
+  "todo": {
+    "description": "",
+    "image": "C:\\claudecode\\20260209_チーム共有_ToDo管理ツール\\参考\\サムネ.png",
+    "color": ""
+  }
+}
