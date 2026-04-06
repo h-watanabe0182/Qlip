@@ -208,9 +208,11 @@ class App:
         self._web_current_idx = 0
 
         # D&D 状態
-        self._drag_item_id  = None   # ドラッグ中の item id
-        self._drag_ghost    = None   # 半透明ゴーストラベル
-        self._drag_origin   = None   # (row, col) ドラッグ元グリッド位置
+        self._drag_item_id   = None   # ドラッグ中の item id
+        self._drag_ghost     = None   # ゴーストラベル
+        self._drag_origin    = None   # (row, col) ドラッグ元グリッド位置
+        self._drag_armed     = False  # 長押し後にD&D有効になったか
+        self._drag_after_id  = None  # after() のID（キャンセル用）
 
         if not os.path.exists(IMG_DIR):
             os.makedirs(IMG_DIR, exist_ok=True)
@@ -636,49 +638,57 @@ class App:
     # Drag & Drop
     # ------------------------------------------------------------------
     def _dnd_start(self, e, item_id, grid_row, grid_col):
+        """ボタン押下時: 0.5秒後にD&Dを有効化するタイマーをセット。"""
         self._drag_item_id   = item_id
         self._drag_origin    = (grid_row, grid_col)
         self._drag_start_xy  = (e.x_root, e.y_root)
-        self._drag_moved     = False
+        self._drag_armed     = False
 
-        # ゴースト（半透明ラベル）
-        if self._drag_ghost:
-            self._drag_ghost.destroy()
-        it = next((x for x in self.data["items"] if x["id"] == item_id), None)
-        if it:
-            self._drag_ghost = tk.Label(self.root, text=it["name"],
-                                        bg="#1a56db", fg="#ffffff",
-                                        font=(FONT, 9, "bold"), padx=8, pady=4,
-                                        relief=tk.FLAT)
-            self._drag_ghost.place(x=e.x_root - self.root.winfo_rootx(),
-                                   y=e.y_root - self.root.winfo_rooty())
-            self._drag_ghost.lift()
+        # 既存タイマーをキャンセル
+        if self._drag_after_id:
+            self.root.after_cancel(self._drag_after_id)
+
+        # 0.5秒後にD&D有効化 → ゴースト表示
+        def arm_dnd():
+            self._drag_armed = True
+            if self._drag_ghost:
+                self._drag_ghost.destroy()
+            it = next((x for x in self.data["items"] if x["id"] == self._drag_item_id), None)
+            if it:
+                self._drag_ghost = tk.Label(self.root, text=f"  ✥ {it['name']}  ",
+                                            bg="#1a56db", fg="#ffffff",
+                                            font=(FONT, 9, "bold"), padx=6, pady=4,
+                                            relief=tk.FLAT)
+                self._drag_ghost.place(x=e.x_root - self.root.winfo_rootx(),
+                                       y=e.y_root - self.root.winfo_rooty())
+                self._drag_ghost.lift()
+
+        self._drag_after_id = self.root.after(500, arm_dnd)
 
     def _dnd_motion(self, e):
-        if self._drag_item_id is None:
+        if not self._drag_armed:
             return
-        sx, sy = self._drag_start_xy
-        if abs(e.x_root - sx) > 5 or abs(e.y_root - sy) > 5:
-            self._drag_moved = True
-        if self._drag_ghost and self._drag_moved:
+        if self._drag_ghost:
             self._drag_ghost.place(x=e.x_root - self.root.winfo_rootx() + 4,
                                    y=e.y_root - self.root.winfo_rooty() + 4)
 
     def _dnd_drop(self, e):
+        # タイマーキャンセル
+        if self._drag_after_id:
+            self.root.after_cancel(self._drag_after_id)
+            self._drag_after_id = None
+
         if self._drag_ghost:
             self._drag_ghost.destroy()
             self._drag_ghost = None
 
-        if self._drag_item_id is None:
-            return
-
-        moved    = self._drag_moved
+        armed    = self._drag_armed
         item_id  = self._drag_item_id
-        self._drag_item_id  = None
-        self._drag_moved    = False
+        self._drag_item_id = None
+        self._drag_armed   = False
 
-        if not moved:
-            return  # クリックはそのままボタンのコマンドに任せる
+        if not armed or item_id is None:
+            return  # 短いクリック → ボタンの command に任せる
 
         # ドロップ先のグリッドセルを計算
         gf = self.grid_frame
