@@ -207,6 +207,9 @@ class App:
         self._web_urls        = self.data["settings"].get("web_urls", ["http://localhost/"])
         self._web_current_idx = 0
 
+        # 選択状態
+        self._selected_item_id = None  # シングルクリックで選択中のアイテムID
+
         # D&D 状態
         self._drag_item_id   = None   # ドラッグ中の item id
         self._drag_ghost     = None   # ゴーストラベル
@@ -335,7 +338,8 @@ class App:
         edit_btn = tk.Label(sidebar, text="✎ 編集", bg=C_SIDEBAR_BG, fg=C_EDIT_FG,
                             font=(FONT, 10, "bold"), anchor="w", padx=12, pady=7, cursor="hand2")
         edit_btn.pack(fill=tk.X)
-        edit_btn.bind("<Button-1>", lambda e: self._item_dialog(mode="edit"))
+        edit_btn.bind("<Button-1>", lambda e: self._item_dialog(
+            mode="edit", prefill_id=self._selected_item_id))
         edit_btn.bind("<Enter>", lambda e: edit_btn.configure(bg="#fff5e0"))
         edit_btn.bind("<Leave>", lambda e: edit_btn.configure(bg=C_SIDEBAR_BG))
 
@@ -463,6 +467,18 @@ class App:
     # ------------------------------------------------------------------
     # Grid render
     # ------------------------------------------------------------------
+    def _deselect_all(self):
+        """全カードの選択を解除して通常色に戻す。"""
+        self._selected_item_id = None
+        # 描画済みカードのウィジェットを直接リセット
+        for iid, frame in self.card_widgets:
+            try:
+                for child in [frame] + list(frame.winfo_children()):
+                    child.configure(bg="#ffffff")
+                frame.configure(highlightbackground=frame.cget("highlightbackground"))
+            except Exception:
+                pass
+
     def render_grid(self, cat, filter_str=""):
         for _, w in self.card_widgets:
             w.destroy()
@@ -490,11 +506,12 @@ class App:
         return DEFAULT_CAT_COLORS.get(it["cat"], DEFAULT_CARD_COLOR)
 
     def _make_card(self, parent, it, grid_row, grid_col):
-        name  = it["name"]
-        path  = it["path"]
-        accent    = self._get_card_color(it)
-        border    = self._darken_color(accent, 0.35)
-        hover_bg  = border
+        name     = it["name"]
+        path     = it["path"]
+        item_id  = it["id"]
+        accent   = self._get_card_color(it)
+        border   = self._darken_color(accent, 0.35)
+        sel_bg   = accent   # 選択時背景 = アクセント色（淡い）
 
         frame = tk.Frame(parent, bg="#ffffff", cursor="hand2",
                          highlightbackground=border, highlightthickness=2)
@@ -513,15 +530,13 @@ class App:
                     card_img_label = tk.Label(frame, image=tk_img, bg="#ffffff",
                                              cursor="hand2", bd=0)
                     card_img_label.pack(pady=(4, 0))
-                    card_img_label.bind("<Button-1>", lambda e, p=path: launch_path(p))
                 except Exception:
                     pass
 
-        btn = tk.Button(frame, text=name, bg="#ffffff", fg=border,
-                        activebackground=hover_bg, activeforeground="#ffffff",
-                        font=(FONT, 9, "bold"), relief=tk.FLAT, bd=0, cursor="hand2",
-                        wraplength=130, padx=4, pady=3,
-                        command=lambda p=path: launch_path(p))
+        # ボタン（command なし → クリックはバインドで制御）
+        btn = tk.Label(frame, text=name, bg="#ffffff", fg=border,
+                       font=(FONT, 9, "bold"), cursor="hand2",
+                       wraplength=130, padx=4, pady=3, anchor="center")
         btn.pack(fill=tk.X, padx=4, pady=(2 if card_img_label else 5, 1))
 
         if card_img_label is None:
@@ -535,46 +550,72 @@ class App:
             path_lbl = tk.Label(frame, text=disp, bg="#ffffff", fg="#888888",
                                 font=(FONT, 8), wraplength=130, justify=tk.CENTER)
             path_lbl.pack(fill=tk.BOTH, expand=True, padx=3, pady=(0, 4))
-            path_lbl.bind("<Button-1>", lambda e, p=path: launch_path(p))
         else:
             path_lbl = tk.Label(frame, text="", bg="#ffffff")
             path_lbl.pack(pady=(0, 2))
 
-        hover_widgets = [frame, btn, path_lbl] + ([card_img_label] if card_img_label else [])
+        all_widgets = [frame, btn, path_lbl] + ([card_img_label] if card_img_label else [])
 
-        def on_enter(e):
-            frame.configure(bg=hover_bg, highlightbackground=hover_bg)
-            btn.configure(bg=hover_bg, fg="#ffffff")
-            path_lbl.configure(bg=hover_bg)
-            if card_img_label:
-                card_img_label.configure(bg=hover_bg)
-            self._show_preview(it)
-
-        def on_leave(e):
+        def _apply_normal():
             frame.configure(bg="#ffffff", highlightbackground=border)
             btn.configure(bg="#ffffff", fg=border)
             path_lbl.configure(bg="#ffffff")
             if card_img_label:
                 card_img_label.configure(bg="#ffffff")
 
-        for w in hover_widgets:
-            w.bind("<Enter>", on_enter)
-            w.bind("<Leave>", on_leave)
+        def _apply_selected():
+            frame.configure(bg=sel_bg, highlightbackground=border)
+            btn.configure(bg=sel_bg, fg=border)
+            path_lbl.configure(bg=sel_bg)
+            if card_img_label:
+                card_img_label.configure(bg=sel_bg)
 
-        # --- D&D バインド ---
-        item_id = it["id"]
-        for w in hover_widgets:
+        def _apply_hover():
+            frame.configure(bg=border, highlightbackground=border)
+            btn.configure(bg=border, fg="#ffffff")
+            path_lbl.configure(bg=border, fg="#ffffff")
+            if card_img_label:
+                card_img_label.configure(bg=border)
+
+        def on_enter(e):
+            self._show_preview(it)
+            if self._selected_item_id != item_id:
+                _apply_hover()
+
+        def on_leave(e):
+            if self._selected_item_id == item_id:
+                _apply_selected()
+            else:
+                _apply_normal()
+                path_lbl.configure(fg="#888888")
+
+        def on_click(e):
+            # 選択切り替え
+            prev = self._selected_item_id
+            self._deselect_all()
+            if prev != item_id:
+                self._selected_item_id = item_id
+                _apply_selected()
+            self._show_preview(it)
+
+        def on_double_click(e):
+            self._selected_item_id = item_id
+            launch_path(path)
+
+        for w in all_widgets:
+            w.bind("<Enter>",          on_enter)
+            w.bind("<Leave>",          on_leave)
+            w.bind("<Button-1>",       on_click)
+            w.bind("<Double-Button-1>", on_double_click)
+            # D&D
             w.bind("<ButtonPress-1>",   lambda e, iid=item_id, r=grid_row, c=grid_col:
-                                            self._dnd_start(e, iid, r, c))
-            w.bind("<B1-Motion>",       lambda e: self._dnd_motion(e))
-            w.bind("<ButtonRelease-1>", lambda e: self._dnd_drop(e))
+                                            self._dnd_start(e, iid, r, c), add="+")
+            w.bind("<B1-Motion>",       lambda e: self._dnd_motion(e),   add="+")
+            w.bind("<ButtonRelease-1>", lambda e: self._dnd_drop(e),     add="+")
 
-        # btn は command があるので Press/Release で launch と D&D を両立
-        # → 短いクリック（移動距離小）は launch、長い移動は D&D とする（_dnd_start で判定）
-        btn.bind("<ButtonPress-1>",   lambda e, iid=item_id, r=grid_row, c=grid_col:
-                                          self._dnd_start(e, iid, r, c), add="+")
-        btn.bind("<B1-Motion>",       lambda e: self._dnd_motion(e),   add="+")
-        btn.bind("<ButtonRelease-1>", lambda e: self._dnd_drop(e),     add="+")
+        # 既に選択中なら選択状態で描画
+        if self._selected_item_id == item_id:
+            frame.after(1, _apply_selected)
 
         return frame
 
@@ -731,7 +772,7 @@ class App:
     # ------------------------------------------------------------------
     # Add / Edit dialog
     # ------------------------------------------------------------------
-    def _item_dialog(self, mode="add"):
+    def _item_dialog(self, mode="add", prefill_id=None):
         dlg = tk.Toplevel(self.root)
         dlg.title("ショートカット追加" if mode == "add" else "ショートカット編集")
         dlg.geometry("560x490")
@@ -751,7 +792,14 @@ class App:
             items_sorted = sorted(self.data["items"], key=lambda x: x.get("order", 0))
             item_labels  = [f"{it['name']}  ({it['path'][:40]}...)" if len(it['path']) > 40
                             else f"{it['name']}  ({it['path']})" for it in items_sorted]
-            if item_labels:
+            # prefill_id が指定されていれば対応するラベルを初期選択
+            if prefill_id:
+                for it in items_sorted:
+                    if it["id"] == prefill_id:
+                        lbl = f"{it['name']}  ({it['path'][:40]}...)" if len(it['path']) > 40 else f"{it['name']}  ({it['path']})"
+                        item_var.set(lbl)
+                        break
+            if not item_var.get() and item_labels:
                 item_var.set(item_labels[0])
             item_menu = tk.OptionMenu(dlg, item_var, *item_labels,
                                       command=lambda v: fill_from_selection(v))
