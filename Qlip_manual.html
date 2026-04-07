@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Qlip 使い方マニュアル</title>
+<title>Qlip v1.1 使い方マニュアル</title>
 <style>
   /* === Base === */
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -346,11 +346,25 @@
     <p style="margin-top:18px; font-size:13px; color:rgba(255,255,255,0.8);">
       よく使うリンク・ファイル・ツールを一画面に集約して素早く起動できるランチャー
     </p>
+    <p style="margin-top:8px; font-size:12px; color:rgba(255,255,255,0.65);">
+      ver 1.1 — 2026-04-07
+    </p>
   </div>
 </div>
 
 <!-- ========== MAIN ========== -->
 <div class="container">
+
+  <!-- v1.1 新機能バナー -->
+  <div style="background:linear-gradient(135deg,#e0eaff,#f0f9ff); border:2px solid #93c5fd; border-radius:14px; padding:18px 22px; margin-bottom:32px;">
+    <div style="font-size:13px; font-weight:800; color:#1a56db; margin-bottom:10px;">🆕 ver 1.1 の新機能</div>
+    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+      <span style="background:#dbeafe; color:#1e40af; border-radius:20px; padding:4px 14px; font-size:12px; font-weight:700;">🖼 カード内画像表示</span>
+      <span style="background:#dcfce7; color:#166534; border-radius:20px; padding:4px 14px; font-size:12px; font-weight:700;">🔀 D&amp;Dでカード並び替え</span>
+      <span style="background:#fef9c3; color:#854d0e; border-radius:20px; padding:4px 14px; font-size:12px; font-weight:700;">📦 qlip_data.json に一元管理</span>
+      <span style="background:#f3e8ff; color:#6b21a8; border-radius:20px; padding:4px 14px; font-size:12px; font-weight:700;">👁 プレビュー軽量化</span>
+    </div>
+  </div>
 
   <!-- 1. 概要 -->
   <div class="section-title">
@@ -375,9 +389,9 @@
       <p>名前・パス・説明文でリアルタイム絞り込み。1件一致で即起動、複数一致でグリッド絞り込み表示。</p>
     </div>
     <div class="card card-purple">
-      <span class="card-icon">🖼</span>
-      <h3>プレビュー表示</h3>
-      <p>カードにマウスを乗せると、左パネルにアイコン画像・説明文・パスをリアルタイムプレビュー。</p>
+      <span class="card-icon">🔀</span>
+      <h3>D&amp;Dで並び替え <span style="font-size:10px; background:#f3e8ff; color:#7c3aed; padding:1px 6px; border-radius:10px;">NEW</span></h3>
+      <p>カードを0.5秒長押しするとゴーストが表示され、そのままドラッグ＆ドロップで好きな位置に移動できます。</p>
     </div>
   </div>
 
@@ -415,9 +429,11 @@
           <div class="mock-cat">その他</div>
           <div class="mock-cat" style="color:#16a34a;font-weight:700;margin-top:8px;">＋ 追加</div>
           <div class="mock-cat" style="color:#d97706;font-weight:700;">✎ 編集</div>
+          <div style="border-top:1px solid #e0e3e8; margin:6px 8px 4px; font-size:9px; color:#9ca3af; padding-top:4px;">設定</div>
+          <div class="mock-cat" style="font-size:9px;">🔲 カード画像</div>
         </div>
         <div class="mock-grid">
-          <div class="mock-card mc-blue">mermaid</div>
+          <div class="mock-card mc-blue" style="font-size:8px;">🗺<br>mermaid</div>
           <div class="mock-card mc-blue">memo</div>
           <div class="mock-card mc-yellow">hyouka</div>
           <div class="mock-card mc-blue">rdp</div>
@@ -432,9 +448,8 @@
         </div>
         <div class="mock-preview">
           <div class="mock-preview-title">mermaid</div>
-          <div class="mock-img-box">🗺</div>
-          <div style="font-size:8px; text-align:left; color:#6b7280;">
-            C:\claudecode\<br>...\index.html<br><br>
+          <div style="font-size:8px; text-align:left; color:#6b7280; padding:4px;">
+            <div style="color:#9ca3af; font-size:8px;">C:\claudecode\Mermaid</div><br>
             <span style="color:#374151;">Mermaid記法エディタ</span>
           </div>
         </div>
@@ -445,10 +460,10 @@
   <table class="info-table" style="margin-top:16px;">
     <thead><tr><th>エリア</th><th>説明</th></tr></thead>
     <tbody>
-      <tr><td>🔎 <strong>ヘッダー検索バー</strong></td><td>キーワード入力 → <kbd>Enter</kbd> で検索・起動。常時フォーカス可能。</td></tr>
-      <tr><td>📂 <strong>サイドバー</strong></td><td>カテゴリ一覧。クリックでグリッドを絞り込み。「＋ 追加」「✎ 編集」ボタンも配置。</td></tr>
-      <tr><td>🟦 <strong>カードグリッド</strong></td><td>ショートカットカード（最大 8列 × 5行 = 40件）を表示。クリックで起動。</td></tr>
-      <tr><td>👁 <strong>プレビューパネル</strong></td><td>カードホバー時に画像・説明・パスを表示。</td></tr>
+      <tr><td>🔎 <strong>ヘッダー検索バー</strong></td><td>キーワード入力 → <kbd>Enter</kbd> で検索・起動。起動直後からフォーカス済み。</td></tr>
+      <tr><td>📂 <strong>左サイドバー</strong></td><td>カテゴリ一覧・追加・編集ボタン・設定（カード画像ON/OFF）を配置。</td></tr>
+      <tr><td>🟦 <strong>カードグリッド</strong></td><td>ショートカットカード（最大 8列 × 5行 = 40件）。クリックで起動、長押しでD&amp;D。</td></tr>
+      <tr><td>👁 <strong>プレビューパネル</strong></td><td>カードホバー時にフォルダパス・説明文を表示（軽量化のため画像なし）。</td></tr>
     </tbody>
   </table>
 
@@ -487,57 +502,70 @@
     </tbody>
   </table>
 
-  <!-- 4. アクセスリスト -->
+  <!-- 4. カードの並び替え（NEW） -->
   <div class="section-title">
-    <div class="sec-icon" style="background:linear-gradient(135deg,#a855f7,#c084fc);">📝</div>
-    アクセスリスト（設定ファイル）
+    <div class="sec-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);">🔀</div>
+    カードの並び替え（ドラッグ＆ドロップ） <span style="font-size:12px; background:#ede9fe; color:#7c3aed; padding:2px 10px; border-radius:10px; font-weight:700; margin-left:6px;">v1.1 NEW</span>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>移動したいカードを 0.5秒 長押し</h4>
+        <p>カード上でマウスボタンを押したまま約0.5秒待つと、青いゴーストラベル（<strong>✥ 名前</strong>）が表示されてD&amp;Dモードになります。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>移動先へドラッグ</h4>
+        <p>ゴーストを移動先のセルまでドラッグします。グリッド上どこでも移動可能です。</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>マウスボタンを離すと確定</h4>
+        <p>ドロップした位置にカードが移動し、順序が <code>qlip_data.json</code> に即座に保存されます。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip">
+    <strong>ポイント：</strong>
+    短いクリック（0.5秒未満）は通常の起動として動作します。D&amp;Dと起動は自動的に区別されるので、誤操作の心配はありません。
+  </div>
+
+  <!-- 5. カード画像表示（NEW） -->
+  <div class="section-title">
+    <div class="sec-icon" style="background:linear-gradient(135deg,#ec4899,#f472b6);">🖼</div>
+    カード内画像表示 <span style="font-size:12px; background:#fce7f3; color:#be185d; padding:2px 10px; border-radius:10px; font-weight:700; margin-left:6px;">v1.1 NEW</span>
   </div>
 
   <p style="font-size:13px; color:#374151; line-height:1.8; margin-bottom:12px;">
-    Qlip は <strong>exe と同じフォルダに置かれた <code>.txt</code> ファイル</strong>（例：<code>アクセスリスト.txt</code>）を自動認識して読み込みます。
-    テキストエディタで直接編集することも、アプリ内の「＋ 追加」「✎ 編集」から操作することも可能です。
+    ショートカットに画像を設定すると、カード内にサムネイル（最大 96×54px）が表示されます。視覚的にツールを識別しやすくなります。
   </p>
 
-  <div class="screen-frame">
-    <div class="screen-bar">
-      <span class="s-red"></span><span class="s-yellow"></span><span class="s-green"></span>
-      <span class="screen-title">アクセスリスト.txt — 書式サンプル</span>
+  <div class="card-grid">
+    <div class="card card-purple">
+      <span class="card-icon">🖼</span>
+      <h3>画像の設定方法</h3>
+      <p>「✎ 編集」ダイアログの「画像」欄に PNG ファイルのパスを指定します。「選択」ボタンでファイルダイアログから選択可能。</p>
     </div>
-    <div class="screen-body" style="background:#1e293b; color:#e2e8f0; font-family:monospace; font-size:12px; line-height:1.9;">
-      <span style="color:#94a3b8;"># CATEGORY 0 お気に入り</span><br>
-      <span style="color:#94a3b8;"># CATEGORY 1 PJフォルダ</span><br>
-      <span style="color:#94a3b8;"># CATEGORY 2 ツール</span><br>
-      <br>
-      <span style="color:#fbbf24;">0</span> <span style="color:#86efac;">mermaid</span> <span style="color:#7dd3fc;">C:\claudecode\Mermaid\index.html</span><br>
-      <span style="color:#fbbf24;">0</span> <span style="color:#86efac;">todo</span> <span style="color:#7dd3fc;">http://172.17.2.205:5001/</span><br>
-      <span style="color:#fbbf24;">1</span> <span style="color:#86efac;">kl</span> <span style="color:#7dd3fc;">\\server\projects\TEC\kl\01_DOC</span><br>
-      <span style="color:#fbbf24;">2</span> <span style="color:#86efac;">tool</span> <span style="color:#7dd3fc;">C:\Tools</span><br>
+    <div class="card card-blue">
+      <span class="card-icon">🔲</span>
+      <h3>表示の ON/OFF</h3>
+      <p>左サイドバー下部の「設定」セクションにあるトグルスイッチで、全カードの画像表示を一括で切り替えできます。</p>
+    </div>
+    <div class="card card-teal">
+      <span class="card-icon">💾</span>
+      <h3>設定は自動保存</h3>
+      <p>ON/OFF の状態は <code>qlip_data.json</code> に保存され、次回起動時も維持されます。</p>
     </div>
   </div>
 
-  <table class="info-table" style="margin-top:12px;">
-    <thead><tr><th>書式</th><th>説明</th><th>例</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><code># CATEGORY &lt;番号&gt; &lt;名前&gt;</code></td>
-        <td>カテゴリ定義行</td>
-        <td><code># CATEGORY 0 お気に入り</code></td>
-      </tr>
-      <tr>
-        <td><code>&lt;番号&gt; &lt;名前&gt; &lt;パス&gt;</code></td>
-        <td>ショートカット行（半角スペース区切り）</td>
-        <td><code>0 memo C:\Desktop\memo.txt</code></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="warn">
-    <strong>⚠ 注意：</strong>
-    名前に半角スペースは使用できません。アンダースコアやキャメルケースを推奨します。<br>
-    ファイルは Shift-JIS（cp932）または UTF-8 の両方に対応しています。保存時は cp932 で書き込まれます。
-  </div>
-
-  <!-- 5. 追加・編集 -->
+  <!-- 6. 追加・編集・削除 -->
   <div class="section-title">
     <div class="sec-icon" style="background:linear-gradient(135deg,#14b8a6,#2dd4bf);">✏</div>
     ショートカットの追加・編集・削除
@@ -567,7 +595,7 @@
         <h4>説明・画像・枠色を任意設定</h4>
         <p>
           <strong>説明</strong>：プレビューパネルに表示するテキストメモ。<br>
-          <strong>画像</strong>：プレビューに表示するサムネイル（PNG/GIF）。<br>
+          <strong>画像</strong>：カード内に表示するサムネイル（PNG/GIF）。<br>
           <strong>枠色</strong>：カードの枠色を HEX カラーで指定（空欄でカテゴリ色を使用）。
         </p>
       </div>
@@ -576,7 +604,7 @@
       <div class="step-num">4</div>
       <div class="step-body">
         <h4>「追加」または「更新」をクリックして保存</h4>
-        <p>アクセスリスト.txt と metadata.json が自動保存されます。</p>
+        <p><code>qlip_data.json</code> に自動保存されます。</p>
       </div>
     </div>
     <div class="step">
@@ -588,7 +616,7 @@
     </div>
   </div>
 
-  <!-- 6. カテゴリカラー -->
+  <!-- 7. カテゴリカラー -->
   <div class="section-title">
     <div class="sec-icon" style="background:linear-gradient(135deg,#3b82f6,#60a5fa);">🎨</div>
     カテゴリカラー一覧
@@ -611,31 +639,41 @@
     編集ダイアログの「枠色」欄に HEX カラー（例：<code>#fde68a</code>）を入力するか、プリセットカラーボタンをクリックすることで、カードごとに個別の色を設定できます。空欄にするとカテゴリのデフォルト色に戻ります。
   </div>
 
-  <!-- 7. ファイル構成 -->
+  <!-- 8. ファイル構成 -->
   <div class="section-title">
     <div class="sec-icon" style="background:linear-gradient(135deg,#f43f5e,#fb7185);">📦</div>
     ファイル構成
   </div>
 
   <table class="info-table">
-    <thead><tr><th>ファイル名</th><th>役割</th><th>編集</th></tr></thead>
+    <thead><tr><th>ファイル名</th><th>役割</th><th>備考</th></tr></thead>
     <tbody>
       <tr><td><code>Qlip.exe</code></td><td>アプリ本体</td><td>—</td></tr>
-      <tr><td><code>アクセスリスト.txt</code>（任意名の .txt）</td><td>カテゴリ・ショートカット定義</td><td>テキストエディタ or アプリ内</td></tr>
-      <tr><td><code>metadata.json</code></td><td>説明・画像パス・枠色の保存先</td><td>自動生成・アプリ内</td></tr>
-      <tr><td><code>Qlip.log</code></td><td>起動ログ（自動生成）</td><td>参照のみ</td></tr>
+      <tr>
+        <td><code>qlip_data.json</code> <span style="background:#dcfce7;color:#166534;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:700;">NEW</span></td>
+        <td>カテゴリ・アイテム・設定をすべて統合管理</td>
+        <td>自動生成・アプリ内で更新</td>
+      </tr>
+      <tr><td><code>アクセスリスト.txt</code>（初回のみ）</td><td>初回起動時に <code>qlip_data.json</code> へ自動移行される旧形式</td><td>移行後は参照されない</td></tr>
+      <tr><td><code>metadata.json</code>（初回のみ）</td><td>初回起動時に <code>qlip_data.json</code> へ自動移行される旧形式</td><td>移行後は参照されない</td></tr>
+      <tr><td><code>Qlip.log</code></td><td>起動・操作ログ（自動生成）</td><td>参照のみ</td></tr>
       <tr><td><code>Qlip.ico</code></td><td>アプリアイコン</td><td>—</td></tr>
-      <tr><td><code>images\</code></td><td>プレビュー用画像の格納先（任意）</td><td>手動配置</td></tr>
+      <tr><td><code>images\</code></td><td>カード画像の格納先（任意）</td><td>手動配置</td></tr>
     </tbody>
   </table>
 
+  <div class="tip">
+    <strong>初回起動時の自動移行：</strong>
+    <code>qlip_data.json</code> が存在しない状態で起動すると、同フォルダの <code>アクセスリスト.txt</code> と <code>metadata.json</code> を読み込んで <code>qlip_data.json</code> を自動生成します。以降はこのファイルのみで管理されます。
+  </div>
+
   <div class="warn">
     <strong>⚠ 重要：</strong>
-    <code>Qlip.exe</code>・<code>アクセスリスト.txt</code>・<code>metadata.json</code> は<strong>同じフォルダ</strong>に置いてください。
+    <code>Qlip.exe</code> と <code>qlip_data.json</code> は<strong>同じフォルダ</strong>に置いてください。
     exe を別の場所に移動すると設定が読み込まれなくなります。
   </div>
 
-  <!-- 8. よくある操作 -->
+  <!-- 9. よくある操作・Tips -->
   <div class="section-title">
     <div class="sec-icon" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);">💡</div>
     よくある操作・Tips
@@ -645,32 +683,32 @@
     <div class="card card-teal">
       <span class="card-icon">⚡</span>
       <h3>即時起動（検索）</h3>
-      <p>アプリ起動直後にすでに検索バーにフォーカスがあります。そのままショートカット名を入力して <kbd>Enter</kbd> を押すだけ。</p>
+      <p>アプリ起動直後から検索バーにフォーカスがあります。そのままショートカット名を入力して <kbd>Enter</kbd> を押すだけ。</p>
     </div>
     <div class="card card-blue">
       <span class="card-icon">🗂</span>
       <h3>カテゴリ切り替え</h3>
       <p>サイドバーのカテゴリ名をクリックすると、そのカテゴリのカードのみ表示されます。「All」で全件表示に戻ります。</p>
     </div>
-    <div class="card card-green">
-      <span class="card-icon">📋</span>
-      <h3>テキスト直接編集</h3>
-      <p>アクセスリスト.txt をテキストエディタで編集してアプリを再起動すると、変更が反映されます。</p>
+    <div class="card card-purple">
+      <span class="card-icon">🔀</span>
+      <h3>カード並び替え</h3>
+      <p>カードを0.5秒長押し → ゴースト表示 → ドラッグ → 離す。順序は即座に保存されます。</p>
     </div>
     <div class="card card-orange">
       <span class="card-icon">🖼</span>
-      <h3>プレビュー画像の設定</h3>
-      <p>編集ダイアログの「画像」欄に PNG ファイルのパスを指定します。<code>images\</code> フォルダに置くと管理しやすいです。</p>
+      <h3>カード画像の設定</h3>
+      <p>編集ダイアログの「画像」欄に PNG ファイルのパスを指定。<code>images\</code> フォルダに置くと管理しやすいです。</p>
     </div>
-    <div class="card card-purple">
-      <span class="card-icon">🔄</span>
-      <h3>リストの更新を反映</h3>
-      <p>アクセスリスト.txt を外部で編集した場合は、Qlip を再起動すると最新の内容が読み込まれます。</p>
+    <div class="card card-green">
+      <span class="card-icon">🔲</span>
+      <h3>画像表示の切り替え</h3>
+      <p>左サイドバーの「設定」→「カード画像」トグルで全カードの画像表示を一括ON/OFF。設定は自動保存されます。</p>
     </div>
     <div class="card card-teal">
       <span class="card-icon">📊</span>
       <h3>ログの確認</h3>
-      <p><code>Qlip.log</code> に起動・検索・追加・削除の操作ログが記録されます。トラブル時に参照してください。</p>
+      <p><code>Qlip.log</code> に起動・検索・追加・削除・D&amp;D移動の操作ログが記録されます。トラブル時に参照してください。</p>
     </div>
   </div>
 
@@ -678,7 +716,7 @@
 
 <!-- ========== FOOTER ========== -->
 <div class="footer">
-  Qlip — Your Quick Link Organizer &nbsp;|&nbsp; 使い方マニュアル
+  Qlip v1.1 — Your Quick Link Organizer &nbsp;|&nbsp; 使い方マニュアル &nbsp;|&nbsp; 2026-04-07
 </div>
 
 </body>
