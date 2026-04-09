@@ -22,5 +22,12 @@
     "description": "",
     "image": "C:\\claudecode\\20260209_チーム共有_ToDo管理ツール\\参考\\サムネ.png",
     "color": ""
+  },
+  "__settings__": {
+    "web_urls": [
+      "http://google",
+      "http://localhost/"
+    ],
+    "show_card_image": true
   }
 }

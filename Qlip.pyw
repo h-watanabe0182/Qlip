@@ -7,6 +7,7 @@ import webbrowser
 import logging
 import json
 import uuid
+import threading
 
 # --- Constants ---
 if getattr(sys, 'frozen', False):
@@ -17,6 +18,7 @@ LOG_FILE   = os.path.join(APP_DIR, "Qlip.log")
 DATA_FILE  = os.path.join(APP_DIR, "qlip_data.json")
 META_FILE  = os.path.join(APP_DIR, "metadata.json")       # 旧ファイル（移行用）
 IMG_DIR    = os.path.join(APP_DIR, "images")
+RDP_FILE   = os.path.join(APP_DIR, "rdpリスト.txt")
 FONT = "Meiryo"
 COLS = 8
 ROWS = 5
@@ -62,62 +64,72 @@ log = logging.info
 #     {"id": "<uuid>", "cat": "0", "name": "memo", "path": "...",
 #      "description": "", "image": "", "color": "", "order": 0}, ...
 #   ],
+#   "rdp_items": [
+#     {"id": "<uuid>", "name": "SROC", "ip": "172.17.2.22",
+#      "user": "administrator", "password": "TCOS", "order": 0}, ...
+#   ],
 #   "settings": {"show_card_image": true, "web_urls": [...]}
 # }
 # ---------------------------------------------------------------------------
 
 def _default_data():
-    return {"categories": [], "items": [], "settings": {"show_card_image": True, "web_urls": ["http://localhost/"]}}
+    return {"categories": [], "items": [], "rdp_items": [],
+            "settings": {"show_card_image": True, "web_urls": ["http://localhost/"]}}
 
 def load_data():
     """qlip_data.json を読み込む。なければ旧ファイルから移行して生成する。"""
+    data = None
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
         except Exception:
             pass
 
-    # --- 旧ファイルから移行 ---
-    data = _default_data()
+    if data is None:
+        # --- 旧ファイルから移行 ---
+        data = _default_data()
+    
+        # アクセスリスト.txt を探す
+        txt_path = None
+        for f in os.scandir(APP_DIR):
+            if f.is_file() and f.name.lower().endswith(".txt"):
+                txt_path = f.path
+                break
+    
+        if txt_path:
+            cats_raw, items_raw = _parse_txt(txt_path)
+            data["categories"] = [{"id": cid, "name": cname} for cid, cname in cats_raw]
+            # metadata.json があれば読み込む
+            old_meta = {}
+            if os.path.exists(META_FILE):
+                try:
+                    with open(META_FILE, "r", encoding="utf-8") as f:
+                        old_meta = json.load(f)
+                except Exception:
+                    pass
+            for order, (cat, name, path) in enumerate(items_raw):
+                m = old_meta.get(name, {})
+                data["items"].append({
+                    "id":          str(uuid.uuid4()),
+                    "cat":         cat,
+                    "name":        name,
+                    "path":        path,
+                    "description": m.get("description", ""),
+                    "image":       m.get("image", ""),
+                    "color":       m.get("color", ""),
+                    "order":       order,
+                })
+            # settings
+            s = old_meta.get("__settings__", {})
+            if "show_card_image" in s:
+                data["settings"]["show_card_image"] = s["show_card_image"]
+            if "web_urls" in s:
+                data["settings"]["web_urls"] = s["web_urls"]
+            log(f"Migrated from {txt_path}: {len(data['categories'])} cats, {len(data['items'])} items")
 
-    # アクセスリスト.txt を探す
-    txt_path = None
-    for f in os.scandir(APP_DIR):
-        if f.is_file() and f.name.lower().endswith(".txt"):
-            txt_path = f.path
-            break
-
-    if txt_path:
-        cats_raw, items_raw = _parse_txt(txt_path)
-        data["categories"] = [{"id": cid, "name": cname} for cid, cname in cats_raw]
-        # metadata.json があれば読み込む
-        old_meta = {}
-        if os.path.exists(META_FILE):
-            try:
-                with open(META_FILE, "r", encoding="utf-8") as f:
-                    old_meta = json.load(f)
-            except Exception:
-                pass
-        for order, (cat, name, path) in enumerate(items_raw):
-            m = old_meta.get(name, {})
-            data["items"].append({
-                "id":          str(uuid.uuid4()),
-                "cat":         cat,
-                "name":        name,
-                "path":        path,
-                "description": m.get("description", ""),
-                "image":       m.get("image", ""),
-                "color":       m.get("color", ""),
-                "order":       order,
-            })
-        # settings
-        s = old_meta.get("__settings__", {})
-        if "show_card_image" in s:
-            data["settings"]["show_card_image"] = s["show_card_image"]
-        if "web_urls" in s:
-            data["settings"]["web_urls"] = s["web_urls"]
-        log(f"Migrated from {txt_path}: {len(data['categories'])} cats, {len(data['items'])} items")
+    # --- rdpリスト.txt の初回インポート ---
+    data = _import_rdp_txt(data)
 
     save_data(data)
     return data
@@ -151,6 +163,93 @@ def _parse_txt(path):
             if len(parts) >= 3:
                 items.append((parts[0], parts[1], parts[2]))
     return categories, items
+
+
+def _parse_rdp_txt(path):
+    """rdpリスト.txt をパースして RDP エントリのリストを返す。
+    各行は 名前,IP,ユーザー,パスワード の CSV 形式。
+    """
+    entries = []
+    for enc in ("cp932", "utf-8"):
+        try:
+            with open(path, "r", encoding=enc) as f:
+                lines = f.readlines()
+            break
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+    else:
+        return entries
+
+    order = 0
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) >= 4:
+            entries.append({
+                "id":       str(uuid.uuid4()),
+                "name":     parts[0],
+                "ip":       parts[1],
+                "user":     parts[2],
+                "password":  parts[3],
+                "order":    order,
+            })
+            order += 1
+    return entries
+
+
+def _import_rdp_txt(data):
+    """rdpリスト.txt が存在し、まだ rdp_items が空なら読み込んで JSON に格納する。"""
+    if "rdp_items" not in data:
+        data["rdp_items"] = []
+
+    if not os.path.exists(RDP_FILE):
+        return data
+
+    # 既にインポート済みなら何もしない
+    if data["rdp_items"]:
+        return data
+
+    entries = _parse_rdp_txt(RDP_FILE)
+    if entries:
+        data["rdp_items"] = entries
+        # インポート済みとしてリネーム
+        imported_path = RDP_FILE + ".imported"
+        try:
+            os.rename(RDP_FILE, imported_path)
+        except Exception:
+            pass
+        log(f"RDP imported: {len(entries)} entries from {RDP_FILE}")
+    return data
+
+
+# --- RDP接続 ---
+def launch_rdp(name, ip, user, password):
+    """cmdkey で資格情報を登録 → mstsc で RDP 接続 → 終了後に資格情報を削除。
+    コンソールウィンドウは一切表示しない。バックグラウンドスレッドで実行する。"""
+    def _connect():
+        cf = subprocess.CREATE_NO_WINDOW
+        try:
+            # 資格情報を登録
+            subprocess.run(
+                ["cmdkey", f"/generic:{ip}", f"/user:{user}", f"/pass:{password}"],
+                creationflags=cf, check=False)
+            log(f"RDP connect: {name} ({ip})")
+            # mstsc 起動（接続が閉じるまでブロック）
+            subprocess.run(["mstsc", f"/v:{ip}"], creationflags=cf, check=False)
+        except Exception as e:
+            log(f"ERROR RDP: {e}")
+        finally:
+            # 資格情報を削除
+            try:
+                subprocess.run(["cmdkey", f"/delete:{ip}"],
+                               creationflags=cf, check=False)
+            except Exception:
+                pass
+            log(f"RDP disconnect: {name} ({ip})")
+
+    threading.Thread(target=_connect, daemon=True).start()
 
 # --- Launch ---
 def launch_path(path_str):
@@ -226,7 +325,7 @@ class App:
         if cats:
             self._select_cat(cats[0]["id"])
         else:
-            self.render_grid("all")
+            self._select_cat("all")
 
         self.search_entry.focus_set()
 
@@ -293,13 +392,27 @@ class App:
         tk.Label(header, text="Your Quick Link Organizer", bg=C_HEADER_BG, fg=C_TEXT_SUB,
                  font=(FONT, 9)).pack(side=tk.LEFT, padx=(0, 12), pady=(14, 0))
 
+        search_frame = tk.Frame(header, bg=C_HEADER_BG)
+        search_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=12, pady=10)
+
         self.search_var = tk.StringVar()
-        self.search_entry = tk.Entry(header, textvariable=self.search_var,
+        self.search_entry = tk.Entry(search_frame, textvariable=self.search_var,
                                      bg="#ffffff", fg=C_TEXT, insertbackground=C_TEXT,
                                      font=(FONT, 22), relief=tk.SOLID, bd=1,
                                      highlightbackground=C_HEADER_BORDER, highlightthickness=1)
-        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=12, pady=10)
+        self.search_entry.pack(fill=tk.BOTH, expand=True)
         self.search_entry.bind("<Return>", self._on_search)
+
+        self._ph_label = tk.Label(search_frame, bg="#ffffff", fg="#aaaaaa", font=(FONT, 11), cursor="xterm", anchor="w")
+        self._ph_label.bind("<Button-1>", lambda e: self.search_entry.focus_set())
+
+        def update_ph_visibility(*args):
+            if self.search_var.get():
+                self._ph_label.place_forget()
+            else:
+                self._ph_label.place(x=8, rely=0.5, anchor="w")
+
+        self.search_var.trace_add("write", update_ph_visibility)
 
         tk.Label(header, text="Enter: 起動  |  複数: フィルタ", bg=C_HEADER_BG, fg=C_TEXT_SUB,
                  font=(FONT, 9)).pack(side=tk.RIGHT, padx=(8, 16))
@@ -326,22 +439,56 @@ class App:
         for cat in self.data["categories"]:
             self._add_cat_btn(sidebar, cat["id"], cat["name"])
 
-        tk.Frame(sidebar, bg=C_SIDEBAR_BG, height=20).pack(fill=tk.X)
+        # --- ショートカット用 追加 / 編集 ---
+        self._shortcut_btn_frame = tk.Frame(sidebar, bg=C_SIDEBAR_BG)
+        self._shortcut_btn_frame.pack(fill=tk.X)
 
-        add_btn = tk.Label(sidebar, text="＋ 追加", bg=C_SIDEBAR_BG, fg=C_ADD_FG,
+        add_btn = tk.Label(self._shortcut_btn_frame, text="＋ 追加", bg=C_SIDEBAR_BG, fg=C_ADD_FG,
                            font=(FONT, 10, "bold"), anchor="w", padx=12, pady=7, cursor="hand2")
         add_btn.pack(fill=tk.X)
         add_btn.bind("<Button-1>", lambda e: self._item_dialog(mode="add"))
         add_btn.bind("<Enter>", lambda e: add_btn.configure(bg="#e8fce8"))
         add_btn.bind("<Leave>", lambda e: add_btn.configure(bg=C_SIDEBAR_BG))
 
-        edit_btn = tk.Label(sidebar, text="✎ 編集", bg=C_SIDEBAR_BG, fg=C_EDIT_FG,
+        edit_btn = tk.Label(self._shortcut_btn_frame, text="✎ 編集", bg=C_SIDEBAR_BG, fg=C_EDIT_FG,
                             font=(FONT, 10, "bold"), anchor="w", padx=12, pady=7, cursor="hand2")
         edit_btn.pack(fill=tk.X)
         edit_btn.bind("<Button-1>", lambda e: self._item_dialog(
             mode="edit", prefill_id=self._selected_item_id))
         edit_btn.bind("<Enter>", lambda e: edit_btn.configure(bg="#fff5e0"))
         edit_btn.bind("<Leave>", lambda e: edit_btn.configure(bg=C_SIDEBAR_BG))
+
+        # --- RDP 専用セクション ---
+        self._rdp_separator = tk.Frame(sidebar, bg=C_SIDEBAR_BORDER, height=1)
+        self._rdp_separator.pack(fill=tk.X, padx=8, pady=(10, 4))
+        self._rdp_cat_btn = tk.Label(sidebar, text="💻 RDP", bg=C_SIDEBAR_BG, fg="#0e7490",
+                           font=(FONT, 10, "bold"), anchor="w", padx=14, pady=8, cursor="hand2")
+        self._rdp_cat_btn.pack(fill=tk.X)
+        self._rdp_cat_btn.bind("<Button-1>", lambda e: self._select_cat("rdp"))
+        self._rdp_cat_btn.bind("<Enter>",
+                     lambda e: self._rdp_cat_btn.configure(bg="#e0f7fa") if self.current_cat != "rdp" else None)
+        self._rdp_cat_btn.bind("<Leave>",
+                     lambda e: self._rdp_cat_btn.configure(bg=C_SIDEBAR_BG) if self.current_cat != "rdp" else None)
+        self.cat_buttons["rdp"] = self._rdp_cat_btn
+
+        # --- RDP用 追加 / 編集 ---
+        self._rdp_btn_frame = tk.Frame(sidebar, bg=C_SIDEBAR_BG)
+        self._rdp_btn_frame.pack(fill=tk.X)
+
+        rdp_add_btn = tk.Label(self._rdp_btn_frame, text="＋ RDP追加", bg=C_SIDEBAR_BG, fg=C_ADD_FG,
+                               font=(FONT, 10, "bold"), anchor="w", padx=12, pady=7, cursor="hand2")
+        rdp_add_btn.pack(fill=tk.X)
+        rdp_add_btn.bind("<Button-1>", lambda e: self._rdp_dialog(mode="add"))
+        rdp_add_btn.bind("<Enter>", lambda e: rdp_add_btn.configure(bg="#e8fce8"))
+        rdp_add_btn.bind("<Leave>", lambda e: rdp_add_btn.configure(bg=C_SIDEBAR_BG))
+
+        rdp_edit_btn = tk.Label(self._rdp_btn_frame, text="✎ RDP編集", bg=C_SIDEBAR_BG, fg=C_EDIT_FG,
+                                font=(FONT, 10, "bold"), anchor="w", padx=12, pady=7, cursor="hand2")
+        rdp_edit_btn.pack(fill=tk.X)
+        rdp_edit_btn.bind("<Button-1>", lambda e: self._rdp_dialog(
+            mode="edit", prefill_id=self._selected_item_id))
+        rdp_edit_btn.bind("<Enter>", lambda e: rdp_edit_btn.configure(bg="#fff5e0"))
+        rdp_edit_btn.bind("<Leave>", lambda e: rdp_edit_btn.configure(bg=C_SIDEBAR_BG))
 
         # Settings
         tk.Frame(sidebar, bg=C_SIDEBAR_BORDER, height=1).pack(fill=tk.X, padx=8, pady=(10, 4))
@@ -459,10 +606,17 @@ class App:
     def _select_cat(self, cat):
         for cid, btn in self.cat_buttons.items():
             btn.configure(bg=C_SIDEBAR_BG, fg=C_SIDEBAR_FG, font=(FONT, 10))
-        self.cat_buttons[cat].configure(bg=C_SIDEBAR_ACTIVE_BG, fg=C_SIDEBAR_ACTIVE_FG,
-                                        font=(FONT, 10, "bold"))
+        if cat in self.cat_buttons:
+            self.cat_buttons[cat].configure(bg=C_SIDEBAR_ACTIVE_BG, fg=C_SIDEBAR_ACTIVE_FG,
+                                            font=(FONT, 10, "bold"))
         self.current_cat = cat
-        self.render_grid(cat)
+        self._update_search_placeholder()
+        
+
+        if cat == "rdp":
+            self.render_rdp_grid()
+        else:
+            self.render_grid(cat)
 
     # ------------------------------------------------------------------
     # Grid render
@@ -578,7 +732,8 @@ class App:
                 card_img_label.configure(bg=border)
 
         def on_enter(e):
-            self._show_preview(it)
+            if not self._selected_item_id:
+                self._show_preview(it)
             if self._selected_item_id != item_id:
                 _apply_hover()
 
@@ -651,25 +806,182 @@ class App:
         desc = it.get("description", "")
         self.preview_desc_label.configure(text=desc if desc else "(説明なし)")
 
+    def _show_rdp_preview(self, rdp):
+        self.preview_title.configure(text=f"💻 {rdp['name']}")
+        self.preview_img_label.configure(image="")
+        self.preview_path_label.configure(text=rdp["ip"])
+        self.preview_desc_label.configure(
+            text=f"ユーザー: {rdp['user']}\n\nダブルクリックで\nRDP接続を開始します")
+
+    # ------------------------------------------------------------------
+    # RDP Grid
+    # ------------------------------------------------------------------
+    def render_rdp_grid(self, filter_str=""):
+        """RDP専用のグリッドを描画する。"""
+        for _, w in self.card_widgets:
+            w.destroy()
+        self.card_widgets = []
+        self.card_images  = []
+        self._selected_item_id = None
+        self._clear_preview()
+
+        rdp_items = sorted(self.data.get("rdp_items", []),
+                           key=lambda x: x.get("order", 0))
+
+        if filter_str:
+            q = filter_str.lower()
+            rdp_items = [it for it in rdp_items if q in it["name"].lower() or q in it["ip"].lower()]
+
+        idx = 0
+        for r in range(ROWS):
+            for c in range(COLS):
+                if idx < len(rdp_items):
+                    card = self._make_rdp_card(self.grid_frame, rdp_items[idx], r, c)
+                else:
+                    card = self._make_empty(self.grid_frame)
+                card.grid(row=r, column=c, sticky="nsew", padx=2, pady=2)
+                if idx < len(rdp_items):
+                    self.card_widgets.append((rdp_items[idx]["id"], card))
+                idx += 1
+
+    def _make_rdp_card(self, parent, rdp, grid_row, grid_col):
+        """RDP接続用のカードを作成する。"""
+        name    = rdp["name"]
+        ip      = rdp["ip"]
+        item_id = rdp["id"]
+        accent  = "#0e7490"  # teal / cyan 系
+        border  = "#0c5e73"
+        sel_bg  = "#cffafe"
+
+        frame = tk.Frame(parent, bg="#ffffff", cursor="hand2",
+                         highlightbackground=border, highlightthickness=2)
+
+        # アイコン
+        icon_lbl = tk.Label(frame, text="💻", bg="#ffffff",
+                            font=(FONT, 16), cursor="hand2")
+        icon_lbl.pack(pady=(6, 0))
+
+        # サーバー名
+        btn = tk.Label(frame, text=name, bg="#ffffff", fg=border,
+                       font=(FONT, 9, "bold"), cursor="hand2",
+                       wraplength=130, padx=4, pady=2, anchor="center")
+        btn.pack(fill=tk.X, padx=4)
+
+        # IPアドレス
+        ip_lbl = tk.Label(frame, text=ip, bg="#ffffff", fg="#888888",
+                          font=(FONT, 8), cursor="hand2")
+        ip_lbl.pack(fill=tk.BOTH, expand=True, padx=3, pady=(0, 4))
+
+        all_widgets = [frame, icon_lbl, btn, ip_lbl]
+
+        def _apply_normal():
+            for w in all_widgets:
+                w.configure(bg="#ffffff")
+            btn.configure(fg=border)
+            ip_lbl.configure(fg="#888888")
+            frame.configure(highlightbackground=border)
+
+        def _apply_selected():
+            for w in all_widgets:
+                w.configure(bg=sel_bg)
+            btn.configure(fg=border)
+            frame.configure(highlightbackground=border)
+
+        def _apply_hover():
+            for w in all_widgets:
+                w.configure(bg=border)
+            btn.configure(fg="#ffffff")
+            ip_lbl.configure(fg="#ffffff")
+            frame.configure(highlightbackground=border)
+
+        def on_enter(e):
+            if not self._selected_item_id:
+                self._show_rdp_preview(rdp)
+            if self._selected_item_id != item_id:
+                _apply_hover()
+
+        def on_leave(e):
+            if self._selected_item_id == item_id:
+                _apply_selected()
+            else:
+                _apply_normal()
+
+        def on_click(e):
+            prev = self._selected_item_id
+            self._deselect_all()
+            if prev != item_id:
+                self._selected_item_id = item_id
+                _apply_selected()
+            self._show_rdp_preview(rdp)
+
+        def on_double_click(e):
+            self._selected_item_id = item_id
+            launch_rdp(rdp["name"], rdp["ip"], rdp["user"], rdp["password"])
+
+        for w in all_widgets:
+            w.bind("<Enter>",          on_enter)
+            w.bind("<Leave>",          on_leave)
+            w.bind("<Button-1>",       on_click)
+            w.bind("<Double-Button-1>", on_double_click)
+
+        if self._selected_item_id == item_id:
+            frame.after(1, _apply_selected)
+
+        return frame
+
     # ------------------------------------------------------------------
     # Search
     # ------------------------------------------------------------------
+    def _update_search_placeholder(self):
+        new_ph = "RDP接続先名・IPで検索 / 実行..." if self.current_cat == "rdp" else "ショートカット名で検索 / 実行..."
+        self._placeholder_text = new_ph
+        if hasattr(self, "_ph_label"):
+            self._ph_label.config(text=new_ph)
+            if not self.search_var.get():
+                self._ph_label.place(x=6, rely=0.5, anchor="w", relwidth=0.9)
+
     def _on_search(self, event=None):
         s = self.search_var.get().strip()
         if not s:
             return
         log(f"Search: {s}")
+
+        if self.current_cat == "rdp":
+            rdp_items = self.data.get("rdp_items", [])
+            exact = [it for it in rdp_items if it["name"].lower() == s.lower() or it["ip"] == s]
+            if len(exact) == 1:
+                self.search_var.set("")
+                self._update_search_placeholder()
+                launch_rdp(exact[0]["name"], exact[0]["ip"], exact[0]["user"], exact[0]["password"])
+                return
+            q = s.lower()
+            matches = [it for it in rdp_items if q in it["name"].lower() or q in it["ip"].lower()]
+            if not matches:
+                self.search_var.set("")
+                self._update_search_placeholder()
+                messagebox.showinfo("検索", f"「{s}」に一致するRDPサーバが見つかりません")
+            elif len(matches) == 1:
+                self.search_var.set("")
+                self._update_search_placeholder()
+                launch_rdp(matches[0]["name"], matches[0]["ip"], matches[0]["user"], matches[0]["password"])
+            else:
+                self.render_rdp_grid(s)
+            return
+
         exact = [it["path"] for it in self.data["items"] if it["name"].lower() == s.lower()]
         if len(exact) == 1:
             self.search_var.set("")
+            self._update_search_placeholder()
             launch_path(exact[0])
             return
         matches = [it for it in self.data["items"] if self._match_filter(it, s)]
         if not matches:
             self.search_var.set("")
+            self._update_search_placeholder()
             messagebox.showinfo("検索", f"「{s}」に一致するショートカットが見つかりません")
         elif len(matches) == 1:
             self.search_var.set("")
+            self._update_search_placeholder()
             launch_path(matches[0]["path"])
         else:
             self._select_cat("all")
@@ -944,6 +1256,9 @@ class App:
             def do_delete():
                 if messagebox.askyesno("削除確認", "このショートカットを削除しますか？", parent=dlg):
                     self.data["items"] = [it for it in self.data["items"] if it["id"] != orig_id[0]]
+                    if getattr(self, "_selected_item_id", None) == orig_id[0]:
+                        self._selected_item_id = None
+                        self._clear_preview()
                     self._save()
                     log(f"Delete: {orig_id[0]}")
                     self.render_grid(self.current_cat)
@@ -965,6 +1280,138 @@ class App:
             else filedialog.askdirectory(title="フォルダを選択")
         if p:
             path_var.set(p.replace("/", "\\"))
+
+    # ------------------------------------------------------------------
+    # RDP Dialog (追加 / 編集)
+    # ------------------------------------------------------------------
+    def _rdp_dialog(self, mode="add", prefill_id=None):
+        dlg = tk.Toplevel(self.root)
+        dlg.title("RDP接続先 追加" if mode == "add" else "RDP接続先 編集")
+        dlg.geometry("480x320")
+        dlg.resizable(False, False)
+        dlg.transient(self.root)
+        dlg.grab_set()
+        dlg.configure(bg="#fafafa")
+
+        ft  = (FONT, 11)
+        pad = {"padx": 14, "pady": 6}
+        row = 0
+
+        # 編集対象選択
+        item_var = tk.StringVar()
+        rdp_items_sorted = sorted(self.data.get("rdp_items", []), key=lambda x: x.get("order", 0))
+        if mode == "edit":
+            tk.Label(dlg, text="編集対象:", bg="#fafafa", font=ft).grid(row=row, column=0, sticky="w", **pad)
+            item_labels = [f"{it['name']}  ({it['ip']})" for it in rdp_items_sorted]
+            if prefill_id:
+                for it in rdp_items_sorted:
+                    if it.get("id") == prefill_id:
+                        item_var.set(f"{it['name']}  ({it['ip']})")
+                        break
+            if not item_var.get() and item_labels:
+                item_var.set(item_labels[0])
+            item_menu = tk.OptionMenu(dlg, item_var, *item_labels,
+                                      command=lambda v: fill_from_selection(v))
+            item_menu.configure(font=(FONT, 9), width=36)
+            item_menu.grid(row=row, column=1, sticky="ew", **pad)
+            row += 1
+
+        # 名前
+        tk.Label(dlg, text="名前:", bg="#fafafa", font=ft).grid(row=row, column=0, sticky="w", **pad)
+        name_var = tk.StringVar()
+        tk.Entry(dlg, textvariable=name_var, font=ft, width=32).grid(row=row, column=1, sticky="ew", **pad)
+        row += 1
+
+        # IPアドレス
+        tk.Label(dlg, text="IP:", bg="#fafafa", font=ft).grid(row=row, column=0, sticky="w", **pad)
+        ip_var = tk.StringVar()
+        tk.Entry(dlg, textvariable=ip_var, font=ft, width=32).grid(row=row, column=1, sticky="ew", **pad)
+        row += 1
+
+        # ユーザー名
+        tk.Label(dlg, text="ユーザー:", bg="#fafafa", font=ft).grid(row=row, column=0, sticky="w", **pad)
+        user_var = tk.StringVar()
+        tk.Entry(dlg, textvariable=user_var, font=ft, width=32).grid(row=row, column=1, sticky="ew", **pad)
+        row += 1
+
+        # パスワード
+        tk.Label(dlg, text="パスワード:", bg="#fafafa", font=ft).grid(row=row, column=0, sticky="w", **pad)
+        pass_var = tk.StringVar()
+        tk.Entry(dlg, textvariable=pass_var, font=ft, width=32, show="*").grid(row=row, column=1, sticky="ew", **pad)
+        row += 1
+
+        # 編集時のフォーム埋め込み
+        orig_id = [None]
+
+        def fill_from_selection(sel):
+            for it in rdp_items_sorted:
+                lbl = f"{it['name']}  ({it['ip']})"
+                if lbl == sel:
+                    orig_id[0] = it.get("id")
+                    name_var.set(it["name"])
+                    ip_var.set(it["ip"])
+                    user_var.set(it["user"])
+                    pass_var.set(it["password"])
+                    break
+
+        if mode == "edit" and rdp_items_sorted:
+            fill_from_selection(item_var.get())
+
+        # ボタン
+        bf = tk.Frame(dlg, bg="#fafafa")
+        bf.grid(row=row, column=0, columnspan=2, pady=14)
+
+        def do_save():
+            name = name_var.get().strip()
+            ip   = ip_var.get().strip()
+            user = user_var.get().strip()
+            pw   = pass_var.get().strip()
+            if not name or not ip or not user or not pw:
+                messagebox.showwarning("入力不足", "すべての項目は必須です", parent=dlg)
+                return
+
+            if "rdp_items" not in self.data:
+                self.data["rdp_items"] = []
+
+            if mode == "edit" and orig_id[0]:
+                for it in self.data["rdp_items"]:
+                    if it.get("id") == orig_id[0]:
+                        it.update({"name": name, "ip": ip, "user": user, "password": pw})
+                        break
+            else:
+                max_order = max((x.get("order", 0) for x in self.data["rdp_items"]), default=-1)
+                self.data["rdp_items"].append({
+                    "id": str(uuid.uuid4()), "name": name, "ip": ip,
+                    "user": user, "password": pw, "order": max_order + 1,
+                })
+            self._save()
+            log(f"RDP {'Edit' if mode == 'edit' else 'Add'}: {name} {ip}")
+            self.render_rdp_grid()
+            dlg.destroy()
+            messagebox.showinfo("完了", f"「{name}」を{'更新' if mode == 'edit' else '追加'}しました")
+
+        tk.Button(bf, text="更新" if mode == "edit" else "追加",
+                  bg="#0e7490", fg="#ffffff", font=(FONT, 11, "bold"), padx=24, pady=4,
+                  command=do_save).pack(side=tk.LEFT, padx=8)
+
+        if mode == "edit":
+            def do_delete():
+                if messagebox.askyesno("削除確認", "このRDP接続先を削除しますか？", parent=dlg):
+                    self.data["rdp_items"] = [it for it in self.data["rdp_items"] if it.get("id") != orig_id[0]]
+                    if getattr(self, "_selected_item_id", None) == orig_id[0]:
+                        self._selected_item_id = None
+                        self._clear_preview()
+                    self._save()
+                    log(f"RDP Delete: {orig_id[0]}")
+                    self.render_rdp_grid()
+                    dlg.destroy()
+            tk.Button(bf, text="削除", bg="#dc2626", fg="#ffffff",
+                      font=(FONT, 11), padx=24, pady=4,
+                      command=do_delete).pack(side=tk.LEFT, padx=8)
+
+        tk.Button(bf, text="キャンセル", font=(FONT, 11), padx=24, pady=4,
+                  command=dlg.destroy).pack(side=tk.LEFT, padx=8)
+        dlg.columnconfigure(1, weight=1)
 
     # ------------------------------------------------------------------
     # Web Panel（将来活用予定）
