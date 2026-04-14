@@ -91,11 +91,9 @@ def load_data():
         data = _default_data()
     
         # アクセスリスト.txt を探す
-        txt_path = None
-        for f in os.scandir(APP_DIR):
-            if f.is_file() and f.name.lower().endswith(".txt"):
-                txt_path = f.path
-                break
+        txt_path = os.path.join(APP_DIR, "アクセスリスト.txt")
+        if not os.path.exists(txt_path):
+            txt_path = None
     
         if txt_path:
             cats_raw, items_raw = _parse_txt(txt_path)
@@ -127,6 +125,13 @@ def load_data():
             if "web_urls" in s:
                 data["settings"]["web_urls"] = s["web_urls"]
             log(f"Migrated from {txt_path}: {len(data['categories'])} cats, {len(data['items'])} items")
+        else:
+            # アクセスリスト.txt がない場合はデフォルトカテゴリを生成
+            data["categories"] = [
+                {"id": "0", "name": "お気に入り"},
+                {"id": "1", "name": "その他"},
+            ]
+            log("No アクセスリスト.txt found. Created default categories.")
 
     # --- rdpリスト.txt の初回インポート ---
     data = _import_rdp_txt(data)
@@ -434,29 +439,11 @@ class App:
         sidebar.pack(fill=tk.Y, side=tk.LEFT)
         sidebar.pack_propagate(False)
 
+        self._cat_list_frame = tk.Frame(sidebar, bg=C_SIDEBAR_BG)
+        self._cat_list_frame.pack(fill=tk.X)
+
         self.cat_buttons = {}
-        self._add_cat_btn(sidebar, "all", "All")
-        for cat in self.data["categories"]:
-            self._add_cat_btn(sidebar, cat["id"], cat["name"])
-
-        # --- ショートカット用 追加 / 編集 ---
-        self._shortcut_btn_frame = tk.Frame(sidebar, bg=C_SIDEBAR_BG)
-        self._shortcut_btn_frame.pack(fill=tk.X)
-
-        add_btn = tk.Label(self._shortcut_btn_frame, text="＋ 追加", bg=C_SIDEBAR_BG, fg=C_ADD_FG,
-                           font=(FONT, 10, "bold"), anchor="w", padx=12, pady=7, cursor="hand2")
-        add_btn.pack(fill=tk.X)
-        add_btn.bind("<Button-1>", lambda e: self._item_dialog(mode="add"))
-        add_btn.bind("<Enter>", lambda e: add_btn.configure(bg="#e8fce8"))
-        add_btn.bind("<Leave>", lambda e: add_btn.configure(bg=C_SIDEBAR_BG))
-
-        edit_btn = tk.Label(self._shortcut_btn_frame, text="✎ 編集", bg=C_SIDEBAR_BG, fg=C_EDIT_FG,
-                            font=(FONT, 10, "bold"), anchor="w", padx=12, pady=7, cursor="hand2")
-        edit_btn.pack(fill=tk.X)
-        edit_btn.bind("<Button-1>", lambda e: self._item_dialog(
-            mode="edit", prefill_id=self._selected_item_id))
-        edit_btn.bind("<Enter>", lambda e: edit_btn.configure(bg="#fff5e0"))
-        edit_btn.bind("<Leave>", lambda e: edit_btn.configure(bg=C_SIDEBAR_BG))
+        self._rebuild_sidebar_cats()
 
         # --- RDP 専用セクション ---
         self._rdp_separator = tk.Frame(sidebar, bg=C_SIDEBAR_BORDER, height=1)
@@ -471,30 +458,29 @@ class App:
                      lambda e: self._rdp_cat_btn.configure(bg=C_SIDEBAR_BG) if self.current_cat != "rdp" else None)
         self.cat_buttons["rdp"] = self._rdp_cat_btn
 
-        # --- RDP用 追加 / 編集 ---
-        self._rdp_btn_frame = tk.Frame(sidebar, bg=C_SIDEBAR_BG)
-        self._rdp_btn_frame.pack(fill=tk.X)
-
-        rdp_add_btn = tk.Label(self._rdp_btn_frame, text="＋ RDP追加", bg=C_SIDEBAR_BG, fg=C_ADD_FG,
-                               font=(FONT, 10, "bold"), anchor="w", padx=12, pady=7, cursor="hand2")
-        rdp_add_btn.pack(fill=tk.X)
-        rdp_add_btn.bind("<Button-1>", lambda e: self._rdp_dialog(mode="add"))
-        rdp_add_btn.bind("<Enter>", lambda e: rdp_add_btn.configure(bg="#e8fce8"))
-        rdp_add_btn.bind("<Leave>", lambda e: rdp_add_btn.configure(bg=C_SIDEBAR_BG))
-
-        rdp_edit_btn = tk.Label(self._rdp_btn_frame, text="✎ RDP編集", bg=C_SIDEBAR_BG, fg=C_EDIT_FG,
-                                font=(FONT, 10, "bold"), anchor="w", padx=12, pady=7, cursor="hand2")
-        rdp_edit_btn.pack(fill=tk.X)
-        rdp_edit_btn.bind("<Button-1>", lambda e: self._rdp_dialog(
-            mode="edit", prefill_id=self._selected_item_id))
-        rdp_edit_btn.bind("<Enter>", lambda e: rdp_edit_btn.configure(bg="#fff5e0"))
-        rdp_edit_btn.bind("<Leave>", lambda e: rdp_edit_btn.configure(bg=C_SIDEBAR_BG))
-
-        # Settings
+        # === 設定セクション ===
         tk.Frame(sidebar, bg=C_SIDEBAR_BORDER, height=1).pack(fill=tk.X, padx=8, pady=(10, 4))
         tk.Label(sidebar, text="設定", bg=C_SIDEBAR_BG, fg=C_TEXT_SUB,
                  font=(FONT, 8), anchor="w", padx=14).pack(fill=tk.X)
 
+        settings_btns = [
+            ("＋ カテゴリ追加",    C_ADD_FG,  "#e8fce8", lambda: self._cat_dialog()),
+            ("✎ カテゴリ編集",    C_EDIT_FG, "#fff5e0", lambda: self._cat_edit_dialog()),
+            ("＋ ショートカット追加", C_ADD_FG,  "#e8fce8", lambda: self._item_dialog(mode="add")),
+            ("✎ ショートカット編集", C_EDIT_FG, "#fff5e0", lambda: self._item_dialog(mode="edit", prefill_id=self._selected_item_id)),
+            ("＋ RDP追加",        C_ADD_FG,  "#e8fce8", lambda: self._rdp_dialog(mode="add")),
+            ("✎ RDP編集",        C_EDIT_FG, "#fff5e0", lambda: self._rdp_dialog(mode="edit", prefill_id=self._selected_item_id)),
+        ]
+        for text, fg_color, hover_bg, cmd in settings_btns:
+            b = tk.Label(sidebar, text=text, bg=C_SIDEBAR_BG, fg=fg_color,
+                         font=(FONT, 9, "bold"), anchor="w", padx=12, pady=5, cursor="hand2")
+            b.pack(fill=tk.X)
+            b.bind("<Button-1>", lambda e, fn=cmd: fn())
+            b.bind("<Enter>", lambda e, w=b, hbg=hover_bg: w.configure(bg=hbg))
+            b.bind("<Leave>", lambda e, w=b: w.configure(bg=C_SIDEBAR_BG))
+
+        # --- カード画像トグル ---
+        tk.Frame(sidebar, bg=C_SIDEBAR_BORDER, height=1).pack(fill=tk.X, padx=8, pady=(6, 2))
         img_toggle_frame = tk.Frame(sidebar, bg=C_SIDEBAR_BG, cursor="hand2")
         img_toggle_frame.pack(fill=tk.X, padx=8, pady=3)
         self._img_toggle_canvas = tk.Canvas(img_toggle_frame, width=34, height=18,
@@ -592,6 +578,134 @@ class App:
     # ------------------------------------------------------------------
     # Sidebar category buttons
     # ------------------------------------------------------------------
+    def _rebuild_sidebar_cats(self):
+        for widget in self._cat_list_frame.winfo_children():
+            widget.destroy()
+        
+        # 既存のrdpボタン等を一旦保持しておく場合もあるが、rdpは後から追加されるため
+        # ここでは純粋なカテゴリリストだけ再生成する
+        # （rdpボタンは self.cat_buttons["rdp"] として別途管理されている）
+        rdp_btn = self.cat_buttons.get("rdp")
+        
+        self.cat_buttons = {}
+        if rdp_btn:
+            self.cat_buttons["rdp"] = rdp_btn
+
+        self._add_cat_btn(self._cat_list_frame, "all", "All")
+        for cat in self.data["categories"]:
+            self._add_cat_btn(self._cat_list_frame, cat["id"], cat["name"])
+
+        if hasattr(self, "current_cat") and hasattr(self, "grid_frame"):
+            self._select_cat(self.current_cat)
+
+    def _cat_dialog(self):
+        from tkinter import simpledialog
+        cat_name = simpledialog.askstring("カテゴリ追加", "新しいカテゴリ名を入力してください:", parent=self.root)
+        if cat_name is not None:
+            cat_name = cat_name.strip()
+            if not cat_name:
+                messagebox.showwarning("入力エラー", "カテゴリ名が空です", parent=self.root)
+                return
+            
+            existing_ids = []
+            for c in self.data["categories"]:
+                try:
+                    existing_ids.append(int(c["id"]))
+                except ValueError:
+                    pass
+            new_id = str(max(existing_ids, default=-1) + 1)
+            
+            self.data["categories"].append({"id": new_id, "name": cat_name})
+            self._save()
+            self._rebuild_sidebar_cats()
+            log(f"Category added: {cat_name} ({new_id})")
+
+    def _cat_edit_dialog(self):
+        """カテゴリ名の編集・削除ダイアログ。"""
+        if not self.data["categories"]:
+            messagebox.showinfo("カテゴリ編集", "編集できるカテゴリがありません", parent=self.root)
+            return
+
+        dlg = tk.Toplevel(self.root)
+        dlg.title("カテゴリ編集")
+        dlg.geometry("400x350")
+        dlg.resizable(False, False)
+        dlg.transient(self.root)
+        dlg.grab_set()
+        dlg.configure(bg="#fafafa")
+
+        ft = (FONT, 11)
+        pad = {"padx": 14, "pady": 6}
+
+        # 編集対象選択
+        tk.Label(dlg, text="カテゴリ:", bg="#fafafa", font=ft).grid(row=0, column=0, sticky="w", **pad)
+        cat_var = tk.StringVar()
+        cat_options = [f"{c['id']} - {c['name']}" for c in self.data["categories"]]
+        if cat_options:
+            cat_var.set(cat_options[0])
+        cat_menu = tk.OptionMenu(dlg, cat_var, *cat_options)
+        cat_menu.configure(font=(FONT, 9), width=28)
+        cat_menu.grid(row=0, column=1, sticky="ew", **pad)
+
+        # 新しい名前
+        tk.Label(dlg, text="新しい名前:", bg="#fafafa", font=ft).grid(row=1, column=0, sticky="w", **pad)
+        name_var = tk.StringVar()
+        tk.Entry(dlg, textvariable=name_var, font=ft, width=28).grid(row=1, column=1, sticky="ew", **pad)
+
+        def fill_name(*_):
+            sel = cat_var.get()
+            if " - " in sel:
+                name_var.set(sel.split(" - ", 1)[1])
+        cat_var.trace_add("write", fill_name)
+        fill_name()
+
+        # ボタン
+        bf = tk.Frame(dlg, bg="#fafafa")
+        bf.grid(row=2, column=0, columnspan=2, pady=14)
+
+        def do_rename():
+            sel = cat_var.get()
+            new_name = name_var.get().strip()
+            if not new_name:
+                messagebox.showwarning("入力エラー", "名前が空です", parent=dlg)
+                return
+            cat_id = sel.split(" - ")[0]
+            for c in self.data["categories"]:
+                if c["id"] == cat_id:
+                    c["name"] = new_name
+                    break
+            self._save()
+            self._rebuild_sidebar_cats()
+            dlg.destroy()
+            log(f"Category renamed: {cat_id} → {new_name}")
+            messagebox.showinfo("完了", f"カテゴリ名を「{new_name}」に変更しました")
+
+        def do_delete():
+            sel = cat_var.get()
+            cat_id = sel.split(" - ")[0]
+            cat_name = sel.split(" - ", 1)[1] if " - " in sel else sel
+            items_in_cat = [it for it in self.data["items"] if it["cat"] == cat_id]
+            msg = f"カテゴリ「{cat_name}」を削除しますか？"
+            if items_in_cat:
+                msg += f"\n\n※ このカテゴリには {len(items_in_cat)} 件のショートカットがあります。\n　ショートカットも一緒に削除されます。"
+            if messagebox.askyesno("削除確認", msg, parent=dlg):
+                self.data["categories"] = [c for c in self.data["categories"] if c["id"] != cat_id]
+                self.data["items"] = [it for it in self.data["items"] if it["cat"] != cat_id]
+                self._save()
+                self._rebuild_sidebar_cats()
+                dlg.destroy()
+                log(f"Category deleted: {cat_id} ({cat_name})")
+
+        tk.Button(bf, text="名前変更", bg=C_BTN_BG, fg=C_BTN_FG,
+                  font=(FONT, 11, "bold"), padx=20, pady=4,
+                  command=do_rename).pack(side=tk.LEFT, padx=6)
+        tk.Button(bf, text="削除", bg="#dc2626", fg="#ffffff",
+                  font=(FONT, 11), padx=20, pady=4,
+                  command=do_delete).pack(side=tk.LEFT, padx=6)
+        tk.Button(bf, text="キャンセル", font=(FONT, 11), padx=20, pady=4,
+                  command=dlg.destroy).pack(side=tk.LEFT, padx=6)
+        dlg.columnconfigure(1, weight=1)
+
     def _add_cat_btn(self, parent, cat_id, label):
         btn = tk.Label(parent, text=label, bg=C_SIDEBAR_BG, fg=C_SIDEBAR_FG,
                        font=(FONT, 10), anchor="w", padx=14, pady=8, cursor="hand2")
