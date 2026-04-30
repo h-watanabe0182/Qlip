@@ -12,8 +12,10 @@ import threading
 # --- Constants ---
 if getattr(sys, 'frozen', False):
     APP_DIR = os.path.dirname(sys.executable)
+    BUNDLE_DIR = sys._MEIPASS
 else:
     APP_DIR = os.path.dirname(os.path.abspath(__file__))
+    BUNDLE_DIR = APP_DIR
 LOG_FILE   = os.path.join(APP_DIR, "Qlip.log")
 DATA_FILE  = os.path.join(APP_DIR, "qlip_data.json")
 META_FILE  = os.path.join(APP_DIR, "metadata.json")       # 旧ファイル（移行用）
@@ -291,7 +293,7 @@ class App:
         self.root.state("zoomed")
         self.root.configure(bg=C_BG)
 
-        ico_path = os.path.join(APP_DIR, "Qlip.ico")
+        ico_path = os.path.join(BUNDLE_DIR, "Qlip.ico")
         if os.path.exists(ico_path):
             try:
                 self.root.iconbitmap(ico_path)
@@ -334,6 +336,8 @@ class App:
 
         self.search_entry.focus_set()
 
+        self.root.bind("<Control-r>", self._toggle_rdp_mode)
+        self.root.bind("<Control-R>", self._toggle_rdp_mode)
     # ------------------------------------------------------------------
     # ヘルパー: データアクセス
     # ------------------------------------------------------------------
@@ -716,6 +720,20 @@ class App:
         btn.bind("<Leave>",
                  lambda e, b=btn, c=cat_id: b.configure(bg=C_SIDEBAR_BG) if c != self.current_cat else None)
         self.cat_buttons[cat_id] = btn
+
+    def _toggle_rdp_mode(self, event=None):
+        if self.current_cat == "rdp":
+            cats = self.data.get("categories", [])
+            for c in cats:
+                if c.get("name") == "お気に入り":
+                    self._select_cat(c["id"])
+                    return
+            if cats:
+                self._select_cat(cats[0]["id"])
+            else:
+                self._select_cat("all")
+        else:
+            self._select_cat("rdp")
 
     def _select_cat(self, cat):
         for cid, btn in self.cat_buttons.items():
